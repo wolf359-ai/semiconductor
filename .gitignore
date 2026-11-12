@@ -1,0 +1,10 @@
+.DS_Store
+__pycache__/
+*.pyc
+.env
+.env.*
+
+# Raw Sketchfab downloads (packed copies are embedded in the dashboard HTML)
+models/*.glb
+models/build/node_modules/
+models/build/out/
