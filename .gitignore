@@ -8,3 +8,4 @@ __pycache__/
 models/*.glb
 models/build/node_modules/
 models/build/out/
+~$*
