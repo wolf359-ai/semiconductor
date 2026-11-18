@@ -3985,7 +3985,7 @@ function agGLPrep(k,s){const C=AGGM[k],M={n:{}};s.updateMatrixWorld(true);
       if(tc){o.material=o.material.clone();o.material.color.setRGB(agLin(tc[0]),agLin(tc[1]),agLin(tc[2]));o.material.roughness=tc===AGC.cb?.9:.35;o.material.metalness=tc===AGC.cb?0:.7}})}
   const w=new T3.Group();w.scale.set(-C.s,C.s,C.s);w.position.set(C.o[0]*C.s,-C.o[1]*C.s,-C.o[2]*C.s);w.add(s);w.visible=false;AGG.rt.add(w);M.w=w;AGG.m[k]=M}
 function agGLPose(v,st,t){const fl=v.type==='Forklift',M=AGG.m[fl?'fl':'ag'],O=AGG.m[fl?'ag':'fl'];M.w.visible=true;O.w.visible=false;AGG.cur=M;const mv=st.sp>.5,bl=.5+.5*Math.sin(t*6);
-  if(fl){M.set(clamp(st.lift*10/M.rise,0,1));M.wh.forEach(w=>w.nd.quaternion.copy(w.q0).premultiply(AGG.q.setFromAxisAngle(w.ax,-st.odo/w.r)));
+  if(fl){M.set(clamp(st.lift*10/M.rise,0,1));M.wh.forEach(w=>w.nd.quaternion.copy(w.q0).premultiply(AGG.q.setFromAxisAngle(w.ax,st.odo/w.r)));
     if(M.lg){M.lg.emissive.setRGB(1,.93,.78);M.lg.emissiveIntensity=mv?2.4:.12}}
   else{const dy=st.lift;M.load.forEach(o=>{o.nd.visible=st.ld;o.nd.position.y=o.y0+dy/o.ls});
     if(M.ring){const c=v.dwell>0?[80,190,230]:v.fac<.7?[255,176,32]:[70,210,120];M.ring.color.setRGB(agLin(c[0]),agLin(c[1]),agLin(c[2]));M.ring.emissive.setRGB(agLin(c[0]),agLin(c[1]),agLin(c[2]));M.ring.emissiveIntensity=1.2+.8*bl}}}
