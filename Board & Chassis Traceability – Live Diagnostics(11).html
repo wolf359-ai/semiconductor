@@ -2494,10 +2494,11 @@ function lgDraw(M){
 /*
  * lgRender(): rebuilds the model only when its inputs change (or when forced). lgTick() calls it while the tab is visible.
  */
-const lgP=()=>({asOf:LG.asOf,sc:LG.sc,cap:LG.cap,exp:LG.exp}),lgKey=P=>[P.asOf,[...P.sc].join('+'),P.cap,[...P.exp].join(),failedArc.length,LG.sel].join('|');
+function lgP(){return{asOf:LG.asOf,sc:LG.sc,cap:LG.cap,exp:LG.exp}}
+function lgKey(P){return[P.asOf,[...P.sc].join('+'),P.cap,[...P.exp].join(),failedArc.length,LG.sel].join('|')}
 function lgRender(force){const P=lgP(),key=lgKey(P);if(!force&&key===LG.key)return;LG.key=key;LG.M=lgModel(P);lgDraw(LG.M)}
 /* While the tab is hidden only the model is rebuilt, to keep the tab badge current; showing the tab forces a full draw. */
-function lgTick(){if($('#m-log')&&!$('#m-log').classList.contains('off')){lgRender(false);return}const P=lgP(),key=lgKey(P);if(key!==LG.key){LG.key=key;LG.M=lgModel(P);$('#tlc').textContent=LG.M.dl.length}}
+function lgTick(){if($('#m-log')&&!$('#m-log').classList.contains('off')){lgRender(false);return}if(!extraRender.ok)return;const P=lgP(),key=lgKey(P);if(key!==LG.key){LG.key=key;LG.M=lgModel(P);$('#tlc').textContent=LG.M.dl.length}}
 /*
  * LOGISTICS DIALOGS: lgShip() shipment tracking and expedite, lgStock() stock locations / lots / requisition, lgOrder() order drivers and recovery options.
  */
@@ -2643,7 +2644,7 @@ function wmRender(force){
   const AB=D.abc;$('#wmab').innerHTML=lgBars(AB.map(x=>({n:x.k.name+' ('+x.cl+', aisle '+x.ai+')',v:x.v,c:x.cl==='A'?'r':x.cl==='B'?'y':'g',l:money(x.v)+'/d'})),{L:200,label:'Usage value by part with ABC class'})+'<div class="sub" style="padding:0 12px 8px">'+(AB.filter(x=>x.mv).map(x=>'<b>Move '+esc(x.k.name)+'</b> '+(x.cl==='A'?'to aisle A or B near the docks':'out of the fast aisle')+', saves about '+(20+hsh(x.k.ref)%40)+' m of travel per pick. ').join('')||'Slotting is aligned with usage.')+'</div>';
   $('#wmcc').innerHTML=D.counts.slice().reverse().map(c=>{if(!wmCcDone(D,c,now)){const st=wmSt(D.T.find(q=>q.id===c.task),now);return '<tr><td class="mono">'+c.id+'</td><td class="mono">'+c.loc+' '+esc(c.sku)+'</td><td>'+c.exp+'</td><td><span class="sub">'+(st[0]==='In progress'?'counting '+Math.round(st[1]*100)+' %':'queued')+'</span></td><td>-</td><td><span class="pi">Requested</span></td></tr>'}const v=WM.adj.has(c.id)?0:c.got-c.exp;return '<tr><td class="mono">'+c.id+'</td><td class="mono">'+c.loc+' '+esc(c.sku)+'</td><td>'+c.exp+'</td><td>'+(WM.adj.has(c.id)?c.exp:c.got)+'</td><td class="'+(v?'hot':'ok')+'">'+(v>0?'+':'')+v+'</td><td>'+(v?'<button data-adj="'+c.id+'">Adjust</button>':'<span class="pp">OK</span>')+'</td></tr>'}).join('');
   if(!WM.warned&&msl.some(x=>x.left<24)){WM.warned=true;const m=msl.find(x=>x.left<24);scAlert('warn','Floor life under 24 h: '+m.m.name+' reel '+m.m.reel+' ('+Math.max(0,m.left).toFixed(0)+' h left)')}}
-function wmTick(){if($('#m-wm')&&!$('#m-wm').classList.contains('off')){wmRender(false);if(!WA.raf&&wmAny())wmStart()}else{const now=wmNow();$('#twc').textContent=wmBuild().T.filter(t=>{const s=wmSt(t,now)[0];return s==='Overdue'||s==='Blocked'}).length}}
+function wmTick(){if($('#m-wm')&&!$('#m-wm').classList.contains('off')){wmRender(false);if(!WA.raf&&wmAny())wmStart()}else if(extraRender.ok){const now=wmNow();$('#twc').textContent=wmBuild().T.filter(t=>{const s=wmSt(t,now)[0];return s==='Overdue'||s==='Blocked'}).length}}
 function wmModal(k){
   const D=WM.D,now=wmNow(),cl='<button id="mc">Close</button>';if(!D)return;const [t,id]=k.split(':');
   if(t==='bay'){const c=D.cells.find(q=>q.id===id);if(!c)return;showM('Bay '+c.id+(c.ref?' / '+c.sku:' / empty'),pl(c.ref?'pp':'pi',c.ref?'In use':'Free'),c.ref?gridH([['Part',c.sku],['Supplier',c.sup],['Lot',c.lot],['Quantity',c.qty+' of '+c.cap],['Fill',Math.round(c.qty/c.cap*100)+' %'],['Level',c.lvl],['Age',c.age+' days'],['Last counted',c.cnt]])+'<div class="sub">A cycle count is due when the age passes 45 days or fill drops under 20 %.</div>':'<div class="sub">This bay is free for putaway.</div>',(c.ref?'<button id="wmA">Request cycle count</button><button id="wmB">Move to quarantine</button>':'')+cl);
@@ -4250,7 +4251,7 @@ Object.assign(PN,{
   csv:()=>csv('time,vehicle,severity,event,source,zone',AG.ev.map(x=>[x.ts,x.v,x.sev==='b'?'impact':x.sev==='w'?'warning':'info',x.ty,x.src,x.z]))},
 'Network and edge hardware':{ag:1,spl:'index=agv_network (sourcetype=cisco:wlc:client OR sourcetype=cisco:ir:telemetry OR sourcetype=cisco:iw:telemetry OR sourcetype=meraki:api:devices OR sourcetype=edgehub:health) earliest=-5m | stats latest(status) as status latest(rssi_dbm) as rssi_dbm latest(latency_ms) as latency_ms by device model role',info:'Health of the Cisco wireless controller, switch, Wi-Fi 7 APs with UWB, Cisco Spaces, each vehicle\'s Cisco router or Wi-Fi client, every Splunk Edge Hub and every Meraki MV camera.',
   csv:()=>csv('device,model,role,status,live',agNet())}});
-agSpl();agTick.ok=true;
+agSpl();agTick.ok=true;extraRender.ok=true;lgTick();wmTick();agTick();
 /*
  * =====================================================================
  * FINAL WIRING: MES start-up, panel toolbars, filter toggle, theme, tab badges,
