@@ -256,6 +256,8 @@ main.off{position:absolute;left:0;right:0;top:0;height:0;overflow:hidden;visibil
 .ss3[hidden]{display:none}.ss3 h5{margin:0;font-size:13px;display:flex;justify-content:space-between;align-items:center}.ss3 img{width:100%;border:1px solid #2d3a44;border-radius:3px;background:#0a0f13}
 .ss3 label{color:#93a6b4}.ss3 input,.ss3 textarea{background:#141c22;color:#e6ebef;border:1px solid #35444f;border-radius:3px;padding:5px 7px;font:inherit;width:100%;box-sizing:border-box}.ss3 textarea{min-height:84px;resize:vertical;font-family:ui-monospace,Menlo,monospace;font-size:11.5px}
 .ss3 .row{display:flex;gap:6px}.ss3 .row input{flex:1;min-width:0}.ss3 button{background:#1f2a33;color:#e6ecf1;border-color:#35444f;padding:4px 10px}.ss3 .go{background:var(--g);border-color:var(--g);color:#fff;font-weight:600}.ss3 .sub{color:#8fa3b2}.ss3 .err{color:#ff8a80}.ss3 .ok{color:#8fe07a}
+.ss3 .seg button[aria-pressed=true]{border-color:var(--c);color:var(--c);background:#16313b}
+.agrs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.agrs>div{background:#141c22;border:1px solid #2d3a44;border-radius:3px;padding:5px 7px}.agrs .l{color:#8fa3b2;font-size:10.5px}.agrs b{font-size:14px}
 @media(max-width:900px){.v3{grid-template-columns:1fr}.sd3{max-height:none}}
 /*
  * AGV TAB: 3D vehicle stage (#agcv) with the vehicle switcher (.agsw) and vehicle badge (.agid), fleet rows and map vehicle hit areas.
@@ -549,7 +551,15 @@ main>.mg{border-radius:3px;overflow:hidden}main>.mg>div{padding:10px 14px}main>.
 <div class="mg" id="agk" style="grid-column:1/-1;grid-row:2;grid-template-columns:repeat(4,1fr)"></div>
 <section class="pn" style="grid-column:1/9;grid-row:3;--o:1"><h2>AGV and forklift 3D model <span>drag to orbit, scroll to zoom, hover a numbered sensor for live data, click to pin it</span></h2>
 <div class="cv3" id="agcv"><canvas id="agg3" aria-hidden="true"></canvas><canvas id="agc3" tabindex="0" aria-label="3D vehicle model. Arrow keys rotate, plus and minus zoom, [ and ] switch vehicles."></canvas><div class="agsw" id="agsw" role="group" aria-label="Switch vehicle"></div><div class="agid" id="agid"></div><div class="agcr" id="agcr" hidden>3D models: <a href="https://sketchfab.com/models/d40cae50e04145dd997cdca415cd72ad" target="_blank" rel="noopener">Forklift</a> by Ethian74, <a href="https://sketchfab.com/models/9f5e1d24a7654c3d85394a5b5a9594e4" target="_blank" rel="noopener">AGV &amp; Trolley</a> by Cels, Sketchfab, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>. Forklift recoloured.</div>
-<div class="ctl3"><button id="agp">Previous</button><button id="agn">Next</button><button id="aga">Auto-rotate: on</button><button id="agl">Labels: on</button><button id="agr">Reset view</button><span style="margin-left:auto;color:#8fa3b2;font-size:12px">[ and ] switch vehicles</span></div><div class="tip3" id="agtip" hidden></div></div></section>
+<div class="ctl3"><button id="agp">Previous</button><button id="agn">Next</button><button id="aga">Auto-rotate: on</button><button id="agl">Labels: on</button><button id="agr">Reset view</button><button id="agrb" aria-controls="agrp" aria-expanded="false" title="Build a vehicle health report with this 3D view and send it to a person on Webex">Report to Webex</button><span style="margin-left:auto;color:#8fa3b2;font-size:12px">[ and ] switch vehicles</span></div><div class="tip3" id="agtip" hidden></div>
+<div class="ss3" id="agrp" hidden role="dialog" aria-label="Send vehicle report to Webex"><h5><span id="agrh">Vehicle report to Webex</span><button id="agrx" aria-label="Close report panel">&#x2715;</button></h5><div class="wxsp" id="agrsp" hidden></div><img id="agri" alt="Snapshot of the 3D vehicle view">
+<div class="agrs" id="agrs"></div>
+<label>Attach as</label><div class="seg" role="group" aria-label="Report format"><button data-f="pdf" aria-pressed="true">PDF report</button><button data-f="html" aria-pressed="false">Full document</button></div><div class="sub" id="agrf"></div>
+<label for="agrto">To (Webex email)</label><input id="agrto" type="email" autocomplete="off" spellcheck="false" placeholder="name@company.com">
+<label for="agrtk">Bot access token</label><div class="row"><input id="agrtk" type="password" autocomplete="off" spellcheck="false"><button type="button" id="agrtkx">Forget</button></div>
+<label for="agrtx">Message</label><textarea id="agrtx"></textarea>
+<div class="sub">The token stays in memory for this session only and goes only to the local relay and webexapis.com. The report captures the vehicle at the moment you open this panel or press Retake.</div><div id="agrm" role="status"></div>
+<div class="row" style="flex-wrap:wrap"><button id="agrgo" class="go">Send to Webex</button><button id="agrpv">Preview</button><button id="agrdl">Download</button><button id="agrr">Retake</button></div></div></div></section>
 <div style="grid-column:9/13;grid-row:3;display:flex;flex-direction:column;gap:12px;min-width:0">
 <section class="pn" style="--o:2"><h2>Fleet status <span id="agfn"></span></h2><div class="tw"><table><thead><tr><th>Vehicle</th><th>Status</th><th>Battery</th><th>UWB fix</th><th>Speed</th></tr></thead><tbody id="agf"></tbody></table></div></section>
 <section class="pn" style="--o:3;flex:1"><h2>Vehicle telematics <span id="agtn"></span></h2><div id="agt" style="overflow:auto"></div></section></div>
@@ -1921,7 +1931,7 @@ const WXLOG=[];
 const wxUuid=id=>{try{return atob(id.replace(/-/g,'+').replace(/_/g,'/')).split('/').pop()}catch(e){return ''}};
 function wxLog(id,to,what){if(!id)return;WXLOG.unshift({id:id,to:to,what:what,at:new Date().toISOString().slice(0,19).replace('T',' ')});wxLogRender()}
 const wxLogH=()=>WXLOG.length?'<table class="wxlt"><colgroup><col style="width:15%"><col style="width:18%"><col style="width:22%"><col><col style="width:96px"></colgroup><thead><tr><th>Sent (UTC)</th><th>To</th><th>Content</th><th>Message ID</th><th></th></tr></thead><tbody>'+WXLOG.map((e,i)=>'<tr><td class="mono">'+e.at+'</td><td>'+esc(e.to)+'</td><td style="white-space:normal">'+esc(e.what)+'</td><td><div class="mono" style="word-break:break-all;font-size:11px">'+esc(e.id)+'</div><div class="sub" style="font-size:11px">UUID '+esc(wxUuid(e.id))+'</div></td><td><button data-wxc="'+i+'">Copy</button></td></tr>').join('')+'</tbody></table>'
-  :'<div class="sub">No messages have been sent to Webex in this browser session yet. IDs appear here after a successful send from Notify, the 3D snapshot or the AI analyst report.</div>';
+  :'<div class="sub">No messages have been sent to Webex in this browser session yet. IDs appear here after a successful send from Notify, the 3D snapshot, the vehicle report or the AI analyst report.</div>';
 function wxLogRender(){const b=$('#wxlg');if(b)b.innerHTML=wxLogH()}
 function wxLogShow(){showM('Webex messages sent','<span class="sub">'+WXLOG.length+' this session</span>','<div id="wxlg"></div><div class="sub" style="margin-top:8px">IDs come from the Webex Messages API response. The list is kept in memory for this browser session only.</div>',
   '<button id="wxca"'+(WXLOG.length?'':' disabled')+'>Copy all IDs</button><button id="mc">Close</button>');$('#mc').onclick=closeM;wxLogRender();
@@ -1932,7 +1942,9 @@ const bin8=s=>Uint8Array.from(s,ch=>ch.charCodeAt(0));
 function dlBlob(bytes,type,name){const url=URL.createObjectURL(new Blob([bytes],{type:type})),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
 
 /* Report document model shared by the PDF and the full HTML document.
- * Blocks: h1, h2, p (b = bold), ul, kv (label/value pairs), tbl (h headers, w column fractions, r rows). */
+ * Blocks: h1, h2, p (b = bold), ul, kv (label/value pairs), tbl (h headers, w column fractions, r rows), chart (c spec),
+ * img (JPEG: jpg binary string for the PDF, src data URL for HTML, w and h in pixels, cap caption).
+ * Optional M.kind, M.app and M.badge replace the header label, product line and severity badge. */
 function repModel(o){
   const rp=o.rep,u=o.u,c=o.c,ob=aiObj(o.x),B=[],tot=rp.wo.tasks.reduce((a,q)=>a+(+q.h||0),0);
   B.push({t:'p',x:'Prepared for '+ORG+' from manufacturing, test and supply-chain data in Splunk by Cisco.'},{t:'kv',r:[['Organization',ORG],['Report',rp.id],['Severity',rp.severity],['Work order',o.woId||'Draft, not yet released'],['Priority',rp.wo.priority],['Assignee',rp.wo.role],['Due','Within '+rp.wo.due+' days'],
@@ -2000,9 +2012,9 @@ function pdfBuild(M,logo){
   if(lum)IM('Lw',lum,ML,PH-BH/2-28,56);else T(ML,PH-BH/2-7,enc(ORG),20,1,'1 1 1');
   /* Rows 93 (LUMINA cap top) and 395 (SILICON baseline) are measured from the 480 px tall Lumina artwork. */
   const LK=56/480,LT=PH-BH/2+28,yA=LT-93*LK-.718*8.5,yP=LT-395*LK;
-  RT(PW-50,yA,'INVESTIGATIVE ACTION REPORT',8.5,1,BL);RT(PW-50,yA-14,'Board & Chassis Traceability',8.5,0,'0.78 0.84 0.92');
+  RT(PW-50,yA,enc((M.kind||'Investigative action report').toUpperCase()),8.5,1,BL);RT(PW-50,yA-14,enc(M.app||'Board & Chassis Traceability'),8.5,0,'0.78 0.84 0.92');
   const PB='Powered by',SB=SPL_BASE;if(spl){const h=12,w=h*spl.ar;IM('Sm',spl,PW-50-w,yP-h*SB,h);RT(PW-50-w-5,yP,PB,7,0,'0.58 0.64 0.73')}else RT(PW-50,yP,PB+' Splunk by Cisco',7,0,'0.58 0.64 0.73');
-  const sv=enc(M.sev.toUpperCase()+' SEVERITY'),sw=tw(sv,8.5,1)+16;R(PW-50-sw,PH-108,sw,16,SV);T(PW-50-sw+8,PH-103.5,sv,8.5,1,'1 1 1');
+  const sv=enc(M.badge||M.sev.toUpperCase()+' SEVERITY'),sw=tw(sv,8.5,1)+16;R(PW-50-sw,PH-108,sw,16,SV);T(PW-50-sw+8,PH-103.5,sv,8.5,1,'1 1 1');
   y=PH-106;wrap(M.title,17,1,CW-sw-14).forEach(l=>{T(ML,y,l,17,1,HD);y-=21});
   wrap(M.sub,11,0,CW).forEach(l=>{T(ML,y,l,11,0,MU);y-=15});y-=6;L(ML,y,PW-50,y,LN,.8);y-=12;
   const para=(s,sz,b,x0,w,col,lh)=>wrap(s,sz,b,w).forEach(l=>{need(lh);T(x0,y-sz,l,sz,b,col);y-=lh});
@@ -2020,7 +2032,9 @@ function pdfBuild(M,logo){
       circle:(x,yy,r,c)=>{const cx=ML+x*CK,cy=top-yy*CK,q=r*CK,m=.5523*q,P2=(a,b)=>f(a)+' '+f(b);ops.push(hx(c)+' rg '+P2(cx+q,cy)+' m '+P2(cx+q,cy+m)+' '+P2(cx+m,cy+q)+' '+P2(cx,cy+q)+' c '+P2(cx-m,cy+q)+' '+P2(cx-q,cy+m)+' '+P2(cx-q,cy)+' c '+P2(cx-q,cy-m)+' '+P2(cx-m,cy-q)+' '+P2(cx,cy-q)+' c '+P2(cx+m,cy-q)+' '+P2(cx+q,cy-m)+' '+P2(cx+q,cy)+' c f')},
       text:(x,yy,t,sz,c,a,b)=>{const e=enc(t),z=+(sz*CK).toFixed(2),w=tw(e,z,b);T(ML+x*CK-(a==='end'?w:a==='middle'?w/2:0),top-yy*CK,e,z,b,hx(c))}});
     y=top-h-6;cap.forEach(l=>{T(ML,y-8.5,l,8.5,0,MU);y-=11});y-=10};
-  M.B.forEach((bk,bi)=>{const nx=M.B[bi+1],keep=nx&&nx.t==='chart'?chartH(nx.c)*CK+70:nx&&nx.t==='tbl'?96:nx&&nx.t==='kv'?70:44;
+  const IMS=[],imH=bk=>Math.min(CW*bk.h/bk.w,330),img=bk=>{const h=imH(bk),w=h*bk.w/bk.h,cap=bk.cap?wrap(bk.cap,8.5,0,CW):[];need(h+14+cap.length*11);y-=4;IMS.push(bk);
+    ops.push('q '+f(w)+' 0 0 '+f(h)+' '+f(ML+(CW-w)/2)+' '+f(y-h)+' cm /Im'+IMS.length+' Do Q');y-=h+6;cap.forEach(l=>{T(ML,y-8.5,l,8.5,0,MU);y-=11});y-=8};
+  M.B.forEach((bk,bi)=>{const nx=M.B[bi+1],keep=nx&&nx.t==='chart'?chartH(nx.c)*CK+70:nx&&nx.t==='img'?imH(nx)+40:nx&&nx.t==='tbl'?96:nx&&nx.t==='kv'?70:44;
     if(bk.t==='h1'){need(keep+20);y-=12;wrap(bk.x,14,1,CW).forEach(l=>{T(ML,y-14,l,14,1,HD);y-=18});L(ML,y-2,PW-50,y-2,BL,1.5);y-=10}
     else if(bk.t==='h2'){need(keep);y-=8;R(ML,y-10,3,9,BL);T(ML+8,y-10,enc(bk.x.toUpperCase()),9.5,1,HD);y-=16}
     else if(bk.t==='p'){para(bk.x,10,bk.b,ML,CW,INK,13.5);y-=4}
@@ -2028,13 +2042,15 @@ function pdfBuild(M,logo){
     else if(bk.t==='kv'){const cw=CW/2;for(let i=0;i<bk.r.length;i+=2){const pr=bk.r.slice(i,i+2),vs=pr.map(p=>wrap(p[1],10,1,cw-12)),rh=10+Math.max.apply(null,vs.map(a=>a.length))*13+6;need(rh);
         pr.forEach((p,k)=>{const x=ML+k*cw;T(x,y-8,enc(p[0]),7.8,0,MU);vs[k].forEach((l,j)=>T(x,y-20-j*13,l,10,1))});y-=rh}y-=4}
     else if(bk.t==='tbl')table(bk);
-    else if(bk.t==='chart')chart(bk)});
+    else if(bk.t==='chart')chart(bk);
+    else if(bk.t==='img')img(bk)});
   const N=pages.length,ft=spl?rid:enc(M.foot);pages.forEach((p,i)=>{ops=p;L(ML,44,PW-50,44,BL,.8);T(ML,32,ft,8,0,MU);const pg='Page '+(i+1)+' of '+N,pw=tw(pg,8,0);T(PW-50-pw,32,pg,8,0,MU);
     if(spl){const h=10,w=h*spl.ar,x=PW-50-pw-16-w;IM('Sm',spl,x,32-h*SB,h);T(x-tw(PB,7,0)-5,32,PB,7,0,MU)}});
   const objs=['<< /Type /Catalog /Pages 2 0 R >>','','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'],kids=[],XR=[];
   const addX=(Lg,tints)=>{if(!Lg)return;objs.push('<< /Type /XObject /Subtype /Image /Width '+Lg.w+' /Height '+Lg.h+' /ColorSpace /DeviceGray /BitsPerComponent 8'+(Lg.fl?' /Filter /FlateDecode':'')+' /Length '+Lg.a.length+' >>\nstream\n'+Lg.a+'\nendstream');const m=objs.length;
     tints.forEach(t=>{objs.push('<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8 /SMask '+m+' 0 R /Length 3 >>\nstream\n'+t[1]+'\nendstream');XR.push('/'+t[0]+' '+objs.length+' 0 R')})};
   addX(lum,[['Lw','\xff\xff\xff']]);addX(spl,[['Sm','\x93\xa1\xb5']]);
+  IMS.forEach((m,i)=>{objs.push('<< /Type /XObject /Subtype /Image /Width '+m.w+' /Height '+m.h+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+m.jpg.length+' >>\nstream\n'+m.jpg+'\nendstream');XR.push('/Im'+(i+1)+' '+objs.length+' 0 R')});
   pages.forEach(p=>{const s=p.join('\n');objs.push('<< /Length '+s.length+' >>\nstream\n'+s+'\nendstream');const ci=objs.length;
     objs.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+PW+' '+PH+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>'+(XR.length?' /XObject << '+XR.join(' ')+' >>':'')+' >> /Contents '+ci+' 0 R >>');kids.push(objs.length)});
   objs[1]='<< /Type /Pages /Kids ['+kids.map(k=>k+' 0 R').join(' ')+'] /Count '+kids.length+' >>';
@@ -2045,7 +2061,7 @@ function pdfBuild(M,logo){
 
 function repDocHtml(M){
   const sc={High:'#c62828',Medium:'#c77800',Low:'#2e7d32'}[M.sev]||'#0b6b84',kv=r=>'<dl class="kv">'+r.map(p=>'<div><dt>'+esc(p[0])+'</dt><dd>'+esc(p[1])+'</dd></div>').join('')+'</dl>';
-  const body=M.B.map(b=>b.t==='chart'?'<figure><figcaption>'+esc(b.c.title)+'</figcaption>'+chartSvg(b.c,CHP.doc)+'<p class="cap">'+esc(b.c.sub)+'</p></figure>':b.t==='h1'?'<h1>'+esc(b.x)+'</h1>':b.t==='h2'?'<h2>'+esc(b.x)+'</h2>':b.t==='p'?'<p'+(b.b?' class="b"':'')+'>'+esc(b.x).replace(/\n/g,'<br>')+'</p>':b.t==='ul'?'<ul>'+b.x.map(q=>'<li>'+esc(q)+'</li>').join('')+'</ul>':b.t==='kv'?kv(b.r):
+  const body=M.B.map(b=>b.t==='img'?'<figure><img src="'+b.src+'" alt="'+esc(b.cap||'Snapshot')+'" style="display:block;max-width:100%;max-height:520px;margin:0 auto;border-radius:4px">'+(b.cap?'<p class="cap">'+esc(b.cap)+'</p>':'')+'</figure>':b.t==='chart'?'<figure><figcaption>'+esc(b.c.title)+'</figcaption>'+chartSvg(b.c,CHP.doc)+'<p class="cap">'+esc(b.c.sub)+'</p></figure>':b.t==='h1'?'<h1>'+esc(b.x)+'</h1>':b.t==='h2'?'<h2>'+esc(b.x)+'</h2>':b.t==='p'?'<p'+(b.b?' class="b"':'')+'>'+esc(b.x).replace(/\n/g,'<br>')+'</p>':b.t==='ul'?'<ul>'+b.x.map(q=>'<li>'+esc(q)+'</li>').join('')+'</ul>':b.t==='kv'?kv(b.r):
     '<table'+(b.tall?' class="tall"':'')+'><colgroup>'+b.w.map(w=>'<col style="width:'+(w*100).toFixed(0)+'%">').join('')+'</colgroup><thead><tr>'+b.h.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+b.r.map(r=>'<tr>'+r.map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table>').join('\n');
   return '<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(M.title)+'</title><style>'+
     'body{font:14px/1.5 system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#1f262d;margin:0;background:#eef1f3}main{max-width:860px;margin:24px auto;background:#fff;padding:36px 44px 28px;border-top:6px solid '+sc+';box-shadow:0 2px 10px rgba(0,0,0,.08)}'+
@@ -2056,7 +2072,7 @@ function repDocHtml(M){
     '.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin:8px 0}.kv dt{font-size:11px;color:#6b7782}.kv dd{margin:0;font-weight:600}table{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:13px}th{background:#eef1f3;color:#55616c;text-align:left;font-weight:600}th,td{padding:6px 8px;border-bottom:1px solid #d5dade;vertical-align:top}table.tall td{height:30px}'+
     'figure{margin:12px 0 18px;break-inside:avoid}figcaption{font-weight:600;margin-bottom:6px}figure svg{font-family:inherit}p.cap{font-size:12px;color:#6b7782;margin-top:4px}'+
     'footer{margin-top:28px;padding-top:8px;border-top:1px solid #d5dade;color:#6b7782;font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}@media print{body{background:#fff}main{box-shadow:none;margin:0;max-width:none}h1,h2{break-after:avoid}tr{break-inside:avoid}}'+
-    '</style></head><body><main><header><div><div class="lum" role="img" aria-label="'+esc(ORG)+'"></div><p class="org">Board &amp; Chassis Traceability  ·  Investigative action report</p><h1>'+esc(M.title)+'</h1><p>'+esc(M.sub)+'</p></div><span class="sev">'+esc(M.sev.toUpperCase())+'</span></header>\n'+body+'\n<footer><span>'+esc(M.foot.split('  |  ').slice(0,-1).join('  |  '))+'</span><span class="pw">Powered by <i class="spl" role="img" aria-label="Splunk by Cisco"></i></span></footer></main></body></html>\n'}
+    '</style></head><body><main><header><div><div class="lum" role="img" aria-label="'+esc(ORG)+'"></div><p class="org">'+esc(M.app||'Board & Chassis Traceability')+'  ·  '+esc(M.kind||'Investigative action report')+'</p><h1>'+esc(M.title)+'</h1><p>'+esc(M.sub)+'</p></div><span class="sev">'+esc(M.badge||M.sev.toUpperCase())+'</span></header>\n'+body+'\n<footer><span>'+esc(M.foot.split('  |  ').slice(0,-1).join('  |  '))+'</span><span class="pw">Powered by <i class="spl" role="img" aria-label="Splunk by Cisco"></i></span></footer></main></body></html>\n'}
 const sleep=ms=>new Promise(r2=>setTimeout(r2,ms));
 async function typeInto(el,text,live){for(let i=0;i<=text.length&&live();i+=6){el.textContent=text.slice(0,i);el.scrollTop=el.scrollHeight;await sleep(18)}if(live())el.textContent=text}
 function aiAnswer(q,x,loc){const t=q.toLowerCase(),r0=loc.rep;
@@ -3952,6 +3968,156 @@ function agHW(v,st,t){const g=agPrims(),B=g.B,Cy=g.Cy,Bm=g.Bm,K=g.K,bl=.5+.5*Mat
     B([8.62,1.6,5.2],[.5,1.1,1.2],AGC.bk,'lidar');B([8.9,1.6,5.2],[.06,.3,1],[255,80,60],'lidar',.8);K('lidar',9,'Safety Lidar','obstacle and pedestrian detection',[8.9,1.8,5.2])}
   return{P:g.P,C:g.C,beam:beam}}
 const agMdl=(v,st,t)=>agGL()?agHW(v,st,t):agModel(v,st,t,false);
+/*
+ * Vehicle health report (Report to Webex on the 3D panel). agRepData() combines the live Edge Hub, BMS, Cisco Spaces
+ * and Wi-Fi readings and the 2-minute trend with a 30-day component condition history. The demo keeps no stored
+ * history, so agPM() and agOps() model it per vehicle, seeded by the vehicle ID so it is stable between reports.
+ * agRepModel() builds the shared report model, so pdfBuild() and repDocHtml() render it like the investigation reports.
+ *   AGPM  [key, component, indicator, unit, as-new value, service limit, decimals, starting wear, wear per day]
+ *   AGPA  maintenance action, failure mode and impact by component key (forklift text first where they differ)
+ */
+const agRng=s=>()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296},
+  agFit=a=>{const n=a.length,mx=(n-1)/2,my=a.reduce((p,q)=>p+q,0)/n;let u=0,d=0;a.forEach((v,i)=>{u+=(i-mx)*(v-my);d+=(i-mx)*(i-mx)});return d?u/d:0},
+  agMean=a=>a.length?a.reduce((p,q)=>p+q,0)/a.length:0,agWin=s=>s<90?Math.round(s)+' seconds':Math.round(s/60)+' minutes',
+  agChg=(c,sh)=>c.k==='lid'?'+'+c.sl.toFixed(1)+' '+c.u+' per day':(c.sl>=0?'+':'')+(c.sl*14).toFixed(c.dec)+' '+c.u+(sh?'':' over 14 days'),agDay=d=>new Date(Date.now()+d*864e5).toISOString().slice(0,10),agPct=x=>Math.round(x*100)+' %';
+const AGPM={Forklift:[['batt','Traction battery','State of health','%',100,80,1,.18,.003],['brg','Drive motor bearing','Vibration at cruise speed','g',.15,.45,2,.22,.008],
+    ['mot','Drive motor winding','Peak temperature per day','\u00b0C',55,85,1,.3,.004],['hyd','Hydraulic lift pump','Full-lift cycle time','s',4.2,5.5,2,.25,.006],
+    ['tyre','Drive tyres','Tread remaining','mm',30,10,1,.45,.006],['brk','Service brakes','Pad remaining','%',100,25,0,.4,.005],
+    ['chn','Mast lift chains','Elongation','%',0,3,2,.3,.004],['cell','Fork load cells','Drift from calibration','%',0,2,2,.2,.008]],
+  AGV:[['batt','Traction battery','State of health','%',100,80,1,.12,.0025],['brg','Drive motor bearing','Vibration at cruise speed','g',.12,.4,2,.2,.008],
+    ['mot','Drive motor winding','Peak temperature per day','\u00b0C',48,80,1,.28,.004],['hyd','Lifting jack','Full-lift cycle time','s',2,2.8,2,.2,.006],
+    ['tyre','Polyurethane drive wheels','Diameter loss','mm',0,3,2,.35,.007],['brk','Holding brake','Engage time','ms',80,150,0,.25,.005],
+    ['lid','Safety lidar window','Contamination','%',0,30,0,.1,.09],['cell','Deck load cells','Drift from calibration','%',0,2,2,.15,.008]]},
+  AGPA={batt:['Run a capacity test, review BMS cell logs and plan battery replacement','Capacity loss shortens shift runtime','Medium'],
+    brg:['Take a vibration spectrum and replace the drive motor bearing','Bearing seizure stops the drive','High'],
+    mot:['Check the motor cooling fan, airflow and insulation resistance','Winding insulation breakdown','Medium'],
+    hyd:['Check hydraulic pressure, filter and pump wear','Slow lifting, then leaks or loss of lift','Medium'],
+    tyre:[['Replace the drive tyres','Replace the drive wheel treads'],['Tread loss reduces grip and stability','Wheel wear causes navigation drift'],['High','Medium']],
+    brk:[['Replace and adjust the brake pads','Adjust or replace the holding brake'],['Longer stopping distance','Slow brake engagement on stop'],'High'],
+    chn:['Measure chain elongation and replace the lift chains','Uneven forks or chain failure under load','High'],
+    lid:['Clean the lidar window and run a protective field test','False stops or missed detections','High'],
+    cell:['Recalibrate the load cells with test weights','Wrong load weights, overload not detected','Medium']};
+function agPM(v){const fl=v.type==='Forklift',r=agRng(hsh(v.id+':pm')),N=30,flt=hsh(v.id)%3,ph=hsh(v.id)%10;
+  return AGPM[fl?'Forklift':'AGV'].map(c=>{const sp=c[5]-c[4],w0=c[7]*(.6+r()*.8),rt=c[8]*(.5+r()),pts=[];
+    for(let d=0;d<N;d++){let w=c[0]==='lid'?((d+ph)%10)*rt+r()*.02:w0+rt*d+(r()-.5)*.02;
+      if(c[0]==='brg'&&flt===0&&d>17)w+=.012*Math.pow(1.32,d-17);if(c[0]==='batt'&&flt===1)w+=d*.004;if(c[0]==='mot')w+=(r()-.5)*.08;
+      pts.push(c[4]+sp*clamp(w,0,1.1))}
+    const cur=pts[N-1],sl=c[0]==='lid'?rt*sp:agFit(pts.slice(-14)),rul=sl*sp>0?Math.max(0,(c[5]-cur)/sl):Infinity,h=clamp((c[5]-cur)/sp,0,1)*100,
+      a=AGPA[c[0]],pk=x=>Array.isArray(x)?x[fl?0:1]:x;
+    return{k:c[0],n:c[1],ind:c[2],u:c[3],good:c[4],lim:c[5],dec:c[6],pts:pts,cur:cur,sl:sl,rul:rul,h:h,s:h<25||rul<14?'r':h<50||rul<45?'y':'g',act:pk(a[0]),fm:pk(a[1]),imp:pk(a[2])}})}
+function agOps(v){const r=agRng(hsh(v.id+':ops')),fl=v.type==='Forklift',o={u:[],a:[],t:[],e:[]};
+  for(let d=0;d<14;d++){const dn=r()<.12?2+r()*4:r()*.6,u=52+r()*24;o.a.push(100-dn/16*100);o.u.push(u);o.t.push(Math.round((fl?70:110)*u/65*(.85+r()*.3)));o.e.push((fl?3.4:1.9)*(.9+r()*.25))}return o}
+function agSess(v,st){const h=st.hist,fl=v.type==='Forklift',n=h.length||1,thr=fl?.6:.03,mv=h.filter(q=>q.sp>.5),hd=h.filter(q=>q.sp<=.5&&q.busy),ld=h.filter(q=>q.load>5);let cyc=0,dist=0,picks=0;
+  h.forEach((q,i)=>{dist+=q.sp/3.6*.5;if(i){if(q.lift>thr&&h[i-1].lift<=thr)cyc++;if(q.load>5&&h[i-1].load<=5)picks++}});
+  return{sec:h.length*.5,mv:mv.length/n,hd:hd.length/n,idle:Math.max(0,1-(mv.length+hd.length)/n),vavg:agMean(mv.map(q=>q.sp)),vmax:h.reduce((a,q)=>Math.max(a,q.sp),0),dist:dist,cyc:cyc,picks:picks,
+    lavg:agMean(ld.map(q=>q.load)),lmax:h.reduce((a,q)=>Math.max(a,q.load),0)}}
+function agRepData(v,st){
+  const fl=v.type==='Forklift',ty=agT(v),b=agBat(v),pm=agPM(v),ops=agOps(v),se=agSess(v,st),ev=AG.ev.filter(x=>x.v===v.id),at=new Date(),
+    wi=Math.max(0,WEQ.findIndex(e=>e[0]===v.id)),drain=3.6*(1+wi*.25),left=Math.max(0,(b-20)/drain),hrs=st.hrs+st.odo/400,uA=agMean(ops.u),aA=agMean(ops.a),opH=16*uA/100,
+    fm=(c,x)=>x.toFixed(c.dec)+' '+c.u,rulT=c=>!isFinite(c.rul)||c.rul>365?'over 1 year':Math.round(c.rul)+' days',
+    imp=ev.filter(x=>x.sev==='b'),ped=ev.filter(x=>/edestrian/.test(x.ty)),prox=ev.filter(x=>/proximity/.test(x.ty)),uwbL=ev.filter(x=>/UWB fix lost/.test(x.ty)),
+    svcI=fl?500:1000,svcH=svcI-hrs%svcI,svcD=svcH/opH,cam=MVC.find(c=>c[0]===st.cam),j=st.job||{},zone=uwbZone(v.x,v.y);
+  let score=Math.round(.6*agMean(pm.map(c=>c.h))+.4*Math.min.apply(null,pm.map(c=>c.h)));score=Math.max(0,score-Math.min(15,imp.length*5));
+  const sev=pm.some(c=>c.s==='r')||score<45?'High':pm.some(c=>c.s==='y')||score<75?'Medium':'Low',F=[],A=[],srt=pm.slice().sort((a,b2)=>a.h-b2.h),wst=srt[0],
+    due=c=>c.s==='r'?(c.rul<7?1:Math.max(2,Math.min(7,Math.round(c.rul/2)))):Math.max(7,Math.min(30,Math.round(c.rul/2)));
+  srt.filter(c=>c.s!=='g').forEach(c=>{
+    F.push(c.n+': '+c.ind.toLowerCase()+' is '+fm(c,c.cur)+' against a service limit of '+fm(c,c.lim)+', '+agChg(c)+(c.k==='lid'?' since the last cleaning':'')+(isFinite(c.rul)?', about '+rulT(c)+' to the limit':'')+'.'+
+      (c.k==='brg'&&c.pts[29]-c.pts[22]>(c.lim-c.good)*.12?' The rise is accelerating, the usual pattern of early bearing wear.':''));
+    A.push({p:c.s==='r'?(c.rul<7?'P1':'P2'):'P3',a:c.act,o:'Fleet maintenance',d:due(c)})});
+  if(b<30){F.push('Battery charge is '+b+' %. At the current draw of about '+drain.toFixed(1)+' % per hour that leaves roughly '+left.toFixed(1)+' h before the 20 % return-to-charge level.');A.push({p:b<15?'P1':'P2',a:'Send '+v.id+' to the charging bay after the current task',o:'Fleet dispatcher',d:0})}
+  if(st.rssi<-72||st.lat>25){F.push('Wi-Fi is weak in '+zone+': '+st.rssi+' dBm on '+st.ap+' with '+st.lat+' ms latency.');A.push({p:'P3',a:'Review Wi-Fi 7 coverage and AP placement in '+zone,o:'Network operations',d:7})}
+  if(st.u[1]!=='g'){F.push('Cisco Spaces UWB accuracy is '+st.u[0]+' from '+st.L+' anchors in '+zone+'.');A.push({p:'P3',a:'Check the UWB anchors serving '+zone,o:'Network operations',d:3})}
+  if(imp.length){F.push(imp.length+' impact'+(imp.length>1?'s':'')+' recorded this session, the largest: '+imp[0].ty.toLowerCase()+' in '+imp[0].z+'.');A.push({p:'P2',a:'Inspect the '+(fl?'mast and overhead guard':'bumper and lidar mount')+' and review the Meraki clip',o:'Safety lead',d:1})}
+  if(ped.length+prox.length>=2){F.push((ped.length+prox.length)+' pedestrian or vehicle proximity warnings this session.');A.push({p:'P3',a:fl?'Coach the operator on pedestrian zones and review the route':'Review the route and lidar warning fields for busy aisles',o:'Safety lead',d:7})}
+  if(st.vib>.6)F.push('Live vibration is '+st.vib.toFixed(2)+' g, above the 0.6 g warning level.');
+  if(uA<55){F.push('Utilization averaged '+uA.toFixed(0)+' % over 14 days, below the 55 % fleet target.');A.push({p:'P4',a:'Rebalance task assignment toward '+v.id,o:'Operations',d:14})}
+  if(svcD<14)A.push({p:'P3',a:'Planned '+svcI+' h service (fluids, filters, brakes, safety checks)',o:'Fleet maintenance',d:Math.max(1,Math.round(svcD))});
+  if(!F.length)F.push('All monitored components are inside their limits, with no impacts or connectivity issues this session.');
+  A.sort((a,b2)=>a.p.localeCompare(b2.p)||a.d-b2.d);
+  const nxt=A.find(a=>a.o==='Fleet maintenance'),summary=v.id+' scores '+score+' out of 100 for health. '+(wst.s!=='g'?wst.n+' is the main concern: '+wst.ind.toLowerCase()+' '+fm(wst,wst.cur)+' against a limit of '+fm(wst,wst.lim)+', about '+rulT(wst)+' to the limit. ':'All monitored components are inside their limits. ')+
+    'Over the last '+agWin(se.sec)+' it was moving '+agPct(se.mv)+' of the time at an average of '+se.vavg.toFixed(1)+' km/h. Battery is at '+b+' %, about '+left.toFixed(1)+' h of work left.';
+  return{v:v,st:st,fl:fl,ty:ty,spec:fl?'Counterbalance forklift, 2.5 t, 48 V':'Heavy-payload AMR, 1,500 kg',b:b,pm:pm,ops:ops,se:se,ev:ev,imp:imp,ped:ped,prox:prox,uwbL:uwbL,at:at,drain:drain,left:left,hrs:hrs,uA:uA,aA:aA,opH:opH,
+    svcI:svcI,svcH:svcH,svcD:svcD,cam:cam,j:j,zone:zone,score:score,sev:sev,F:F,A:A,summary:summary,fm:fm,rulT:rulT,
+    next:nxt?(nxt.d?'in '+nxt.d+' d':'now'):'in '+Math.round(svcD)+' d',id:'VHR-'+v.id.replace(/[^A-Z0-9]/gi,'')+'-'+at.toISOString().slice(0,16).replace(/[-:T]/g,'')}}
+function agRepModel(d,shot,full){
+  const v=d.v,st=d.st,fl=d.fl,pm=d.pm,se=d.se,h=st.hist,B=[],at=d.at.toLocaleString(),dueT=n=>n?'Within '+n+' day'+(n>1?'s':''):'Now',cl=c=>c.s==='r'?'bad':c.s==='y'?'warn':'ok',
+    pmK=k=>pm.find(c=>c.k===k),hw=AGHW[d.ty]||{},C=(()=>{try{return agMdl(v,st,0).C}catch(e){return[]}})(),lk=s=>s==='High'?2:s==='Medium'?1:0,
+    lik=c=>c.h<25||c.rul<14?'High':c.h<50||c.rul<45?'Medium':'Low',risk=(a,b)=>['Low','Low','Medium','High','Critical'][lk(a)+lk(b)];
+  B.push({t:'p',x:'Prepared for '+ORG+' from AGV and forklift telematics in Splunk by Cisco: Splunk Edge Hub, BMS, Cisco Spaces UWB, Cisco Wi-Fi 7 and Meraki MV analytics.'},
+    {t:'kv',r:[['Organization',ORG],['Report',d.id],['Vehicle',v.id+', '+d.spec],['Status',agStat(v)[0]],['Health score',d.score+' / 100 ('+d.sev.toLowerCase()+' risk)'],['Zone',d.zone],
+      ['Current task',(d.j.type||'Patrol')+(d.j.id&&d.j.id!=='patrol'?' '+d.j.id:'')],['Operator',fl?(d.j.op||WOP[hsh(v.id)%WOP.length]):'Autonomous'],['Hour meter',d.hrs.toFixed(1)+' h'],['Generated',at]]});
+  if(shot)B.push({t:'img',jpg:shot.bin,src:shot.jpg,w:shot.w,h:shot.h,cap:'3D view of '+v.id+' at '+at+'. Numbered markers are the Edge Hub sensors listed under Vehicle telematics.'});
+  B.push({t:'h2',x:'Summary'},{t:'p',x:d.summary},
+    {t:'h2',x:'Key indicators'},{t:'kv',r:[['Health score',d.score+' / 100'],['Weakest component',pmK(pm.slice().sort((a,b)=>a.h-b.h)[0].k).n],['Battery state of health',d.fm(pmK('batt'),pmK('batt').cur)],['Battery charge',d.b+' %, '+d.left.toFixed(1)+' h to 20 %'],
+      ['Bearing vibration',d.fm(pmK('brg'),pmK('brg').cur)+' (limit '+pmK('brg').lim+' g)'],['Motor temperature',st.mt.toFixed(1)+' \u00b0C now, '+pmK('mot').cur.toFixed(1)+' \u00b0C daily peak'],['Availability, 14 days',d.aA.toFixed(1)+' %'],['Utilization, 14 days',d.uA.toFixed(0)+' %'],
+      ['Impacts this session',String(d.imp.length)],['Next planned service','In '+Math.round(d.svcH)+' h, about '+Math.max(1,Math.round(d.svcD))+' days']]},
+    {t:'h2',x:'Findings'},{t:'ul',x:d.F},
+    {t:'h2',x:'Recommended actions'},d.A.length?{t:'tbl',h:['Priority','Action','Owner','Due'],w:[.1,.56,.2,.14],r:d.A.map(a=>[a.p,a.a,a.o,dueT(a.d)])}:{t:'p',x:'No actions needed. Keep the planned service schedule.'});
+  B.push({t:'h1',x:'Predictive maintenance'},{t:'p',x:'Health compares each condition indicator with its as-new value and service limit: 100 is as new, 0 is at the limit. Remaining life projects the last 14 days of trend to the limit. The 30-day history comes from the daily Edge Hub and BMS summaries in Splunk; in this demo it is modelled for each vehicle.'},
+    {t:'h2',x:'Component condition'},{t:'tbl',h:['Component','Indicator','Now','Limit','14-day change','Remaining life','Health'],w:[.2,.2,.11,.11,.13,.13,.12],
+      r:pm.map(c=>[c.n,c.ind,d.fm(c,c.cur),d.fm(c,c.lim),agChg(c,1),d.rulT(c),Math.round(c.h)+(c.s==='r'?' action':c.s==='y'?' plan':' ok')])},
+    {t:'chart',c:{k:'hbar',title:'Component health',sub:'100 is as new and 0 is at the service limit. Red needs action now, amber needs a planned repair.',min:0,max:100,rows:pm.map(c=>({l:c.n,v:c.h,txt:String(Math.round(c.h)),c:cl(c)}))}},
+    {t:'chart',c:{k:'hbar',title:'Estimated remaining useful life',sub:'Days until each indicator reaches its service limit at the current 14-day trend, capped at one year.',min:0,max:365,rows:pm.map(c=>({l:c.n,v:Math.min(365,isFinite(c.rul)?c.rul:365),txt:!isFinite(c.rul)||c.rul>365?'>1 yr':Math.round(c.rul)+' d',c:cl(c)}))}});
+  [['batt','Traction battery state of health, last 30 days','Lithium-ion packs are usually replaced at 80 % of rated capacity.'],['brg','Drive motor bearing vibration at cruise speed, last 30 days','Edge Hub accelerometer, daily average at a steady 6 to 8 km/h so speed does not mask the trend.'],['mot','Drive motor peak temperature, last 30 days','Daily maximum winding temperature from the truck controller.']].forEach(q=>{const c=pmK(q[0]);
+    B.push({t:'chart',c:{k:'line',title:q[1],sub:q[2]+' Now '+d.fm(c,c.cur)+', remaining life '+d.rulT(c)+'.',series:[{pts:c.pts,c:c.s==='g'?'acc':c.s==='y'?'warn':'bad'}],lim:{v:c.lim,l:'service limit '+d.fm(c,c.lim)},xl:['30 days ago','today'],dec:c.dec,unit:c.u}})});
+  B.push({t:'h2',x:'Failure risk'},{t:'tbl',h:['Failure mode','Early indicator','Likelihood','Impact','Risk'],w:[.32,.28,.13,.13,.14],r:pm.map(c=>[c.fm+' ('+c.n.toLowerCase()+')',c.ind,lik(c),c.imp,risk(lik(c),c.imp)]).sort((a,b)=>['Critical','High','Medium','Low'].indexOf(a[4])-['Critical','High','Medium','Low'].indexOf(b[4]))},
+    {t:'h2',x:'Maintenance plan'},{t:'tbl',h:['Component','Basis','Action','Due by'],w:[.2,.22,.42,.16],r:pm.slice().sort((a,b)=>a.rul-b.rul).slice(0,5).map(c=>[c.n,'Condition: '+c.ind.toLowerCase(),c.act,agDay(Math.max(0,Math.min(isFinite(c.rul)?c.rul*.7:180,180)))]).concat([['Whole vehicle','Time: every '+d.svcI+' h','Planned service: fluids, filters, brakes, safety and lift checks',agDay(Math.max(1,d.svcD))]])});
+  B.push({t:'h1',x:'Performance characteristics'},{t:'h2',x:'Last '+agWin(se.sec)},{t:'kv',r:[['Moving',agPct(se.mv)],[fl?'Handling loads':'Docking and handling',agPct(se.hd)],['Idle',agPct(se.idle)],['Average speed while moving',se.vavg.toFixed(1)+' km/h'],['Top speed',se.vmax.toFixed(1)+' km/h'],['Distance',Math.round(se.dist)+' m'],
+    [fl?'Fork lift cycles':'Deck lift cycles',String(se.cyc)],['Loads picked up',String(se.picks)],['Average load',se.lavg?Math.round(se.lavg)+' kg':'none'],['Peak load',Math.round(se.lmax)+' kg of '+(fl?'2,500':'1,500')],['Energy draw','about '+d.drain.toFixed(1)+' % of battery per hour'],['Runtime left',d.left.toFixed(1)+' h to 20 %']]});
+  if(h.length>1){B.push({t:'chart',c:{k:'hbar',title:'Time split',sub:'Share of samples moving, handling or idle, sampled at 2 Hz.',min:0,max:100,rows:[['Moving',se.mv,'ok'],[fl?'Handling loads':'Docking and handling',se.hd,'acc'],['Idle',se.idle,'n']].map(q=>({l:q[0],v:q[1]*100,txt:agPct(q[1]),c:q[2]}))}},
+    {t:'chart',c:{k:'line',title:'Speed, last '+agWin(se.sec),sub:'Average '+se.vavg.toFixed(1)+' km/h while moving, top '+se.vmax.toFixed(1)+' km/h. Dips are zone speed limits, yielding and stops to load.',series:[{pts:h.map(q=>q.sp),c:'acc'}],xl:[agWin(se.sec)+' ago','now'],dec:1,unit:'km/h'}},
+    {t:'chart',c:{k:'line',title:(fl?'Fork':'Deck')+' height and lift cycles',sub:se.cyc+' lift cycles in the window. '+(fl?'Rack-level picks raise the forks above 0.6 m.':'The jack raises the deck to lift a cart.'),series:[{pts:h.map(q=>fl?q.lift:q.lift*1000),c:'warn'}],xl:[agWin(se.sec)+' ago','now'],dec:fl?2:0,unit:fl?'m':'mm'}})}
+  B.push({t:'h2',x:'Last 14 days'},{t:'kv',r:[['Utilization',d.uA.toFixed(0)+' % average'],['Availability',d.aA.toFixed(1)+' % average'],['Days with a breakdown',String(d.ops.a.filter(a=>a<90).length)],['Tasks per day',Math.round(agMean(d.ops.t))+' average'],
+      ['Energy per operating hour',agMean(d.ops.e).toFixed(2)+' kWh'],['Operating hours per day',d.opH.toFixed(1)+' h']]},
+    {t:'chart',c:{k:'line',title:'Daily utilization and availability, last 14 days',sub:'Blue: share of the shift loaded or handling. Green: share of the shift available, with dips on days with breakdowns or unplanned repairs.',series:[{pts:d.ops.u,c:'acc',dots:1},{pts:d.ops.a,c:'ok',dots:1}],xl:['14 days ago','today'],dec:0,unit:'%'}});
+  B.push({t:'h1',x:'Vehicle telematics'},{t:'kv',r:[['Position (Cisco UWB)','x '+(v.x/10).toFixed(1)+' m, y '+(v.y/10).toFixed(1)+' m, '+st.u[0]],['Zone',d.zone],['Speed and heading',st.sp.toFixed(1)+' km/h, '+Math.round((((v.ha==null?v.ang:v.ha)*180/Math.PI)%360+360)%360)+'\u00b0'],
+      [fl?'Fork height':'Deck height',agVal('lift',v,st)],['Load',agVal('wt',v,st)],['Battery',agVal('batt',v,st)],['Motor temperature',st.mt.toFixed(1)+' \u00b0C'],['Vibration (Edge Hub)',st.vib.toFixed(2)+' g'],['Hour meter',d.hrs.toFixed(1)+' h'],['Odometer this session',Math.round(st.odo)+' m']]},
+    {t:'h2',x:'Sensors and hardware'},{t:'tbl',h:['#','Sensor','Live reading','Status','Splunk sourcetype'],w:[.05,.3,.31,.11,.23],r:C.filter(q=>hw[q.k]).map(q=>{const s=agCS(q.k,v,st);return[String(q.n),q.t,agVal(q.k,v,st),s==='g'?'OK':s==='y'?'Warning':'Fault',hw[q.k][1]]})},
+    {t:'h2',x:'Connectivity and location'},{t:'kv',r:[['Vehicle network device',fl?'Cisco Catalyst IR1835, Wi-Fi 7 with 5G backup':'Cisco Catalyst IW9165E, fast roaming'],['Access point',st.ap+', '+st.rssi+' dBm'],['Latency',st.lat+' ms'],['Roams this session',String(st.roam)],
+      ['UWB accuracy',st.u[0]+' from '+st.L+' anchors'],['UWB fixes lost this session',String(d.uwbL.length)],['Meraki camera in view',d.cam?d.cam[0]+' '+d.cam[1]+', '+d.cam[4]:'none'],['Edge Hub','EH-'+v.id.replace('-','')+', reporting at 10 Hz']]});
+  B.push({t:'h1',x:'Safety events'},{t:'kv',r:[['Impacts',String(d.imp.length)],['Pedestrian warnings',String(d.ped.length)],['Vehicle proximity yields',String(d.prox.length)],['Speed-zone entries',String(d.ev.filter(x=>x.sev==='i').length)]]},
+    d.ev.length?{t:'tbl',h:['Time (UTC)','Event','Source','Zone'],w:[.14,.42,.24,.2],r:d.ev.slice(0,15).map(x=>[x.ts,(x.sev==='b'?'Impact: ':x.sev==='w'?'Warning: ':'')+x.ty,x.src,x.z])}:{t:'p',x:'No safety events for '+v.id+' this session.'},
+    {t:'h2',x:'Approvals'},{t:'tbl',h:['Role','Name','Signature','Date'],w:[.26,.28,.28,.18],r:[['Fleet maintenance','','',''],['Safety','','',''],['Operations','','','']],tall:1});
+  if(full){const sp=k=>PN[k]&&PN[k].spl||'';
+    B.push({t:'h1',x:'Appendix A. Data sources'},{t:'tbl',h:['Data','Splunk search'],w:[.22,.78],r:[['3D model readings',sp('AGV and forklift 3D model')],['Vehicle telematics',sp('Vehicle telematics')],['Telematics trend',sp('Telematics trend')],
+      ['Condition history','index=agv_telematics vehicle_id='+v.id+' earliest=-30d@d | timechart span=1d avg(vibration_cruise_g) as vibration max(motor_temp_c) as motor_peak latest(battery_soh_pct) as soh | predict vibration soh future_timespan=30'],
+      ['Safety events','index=agv_safety vehicle_id='+v.id+' earliest=-8h | table _time event source zone']].filter(r=>r[1])},
+      {t:'h1',x:'Appendix B. Condition history'},{t:'tbl',h:['Date'].concat(['batt','brg','mot','hyd','tyre'].map(k=>pmK(k).n+' ('+pmK(k).u+')')),w:[.15,.17,.17,.17,.17,.17],r:pmK('batt').pts.map((x,i)=>[agDay(i-29)].concat(['batt','brg','mot','hyd','tyre'].map(k=>pmK(k).pts[i].toFixed(pmK(k).dec)))).reverse()},
+      {t:'h1',x:'Appendix C. Telematics samples'},h.length?{t:'tbl',h:['Seconds ago','Speed (km/h)',fl?'Fork height (m)':'Deck height (mm)','Load (kg)','Battery (%)'],w:[.2,.2,.2,.2,.2],r:h.filter((q,i)=>(h.length-1-i)%10===0).map((q,i,a)=>[String((a.length-1-i)*5),q.sp.toFixed(1),fl?q.lift.toFixed(2):String(Math.round(q.lift*1000)),String(Math.round(q.load)),String(q.bat)])}:{t:'p',x:'No samples yet.'})}
+  return{title:'Vehicle health report '+v.id,sub:d.spec+', '+d.zone,sev:d.sev,badge:'HEALTH '+d.score+' / 100',kind:'Vehicle health report',app:'AGV and Forklift Telematics',foot:d.id+'  |  '+ORG+'  |  Splunk by Cisco',B:B}}
+function agShot(d){const gl=$('#agg3'),cv=$('#agc3');agDraw(performance.now());const dpr=devicePixelRatio||1,w=cv.width,h=cv.height,bh=Math.round(48*dpr),o=document.createElement('canvas');o.width=w;o.height=h+bh;const c=o.getContext('2d');
+  const g=c.createRadialGradient(w/2,bh+h*.38,0,w/2,bh+h*.38,Math.max(w,h)*.72);g.addColorStop(0,'#1d2b34');g.addColorStop(1,'#0a0f13');c.fillStyle=g;c.fillRect(0,0,w,h+bh);
+  if(agGL()&&gl&&gl.width)c.drawImage(gl,0,bh,w,h);c.drawImage(cv,0,bh);c.fillStyle='rgba(8,12,16,.94)';c.fillRect(0,0,w,bh);c.fillStyle=d.sev==='High'?'#ff4d4d':d.sev==='Medium'?'#ffb020':'#76d34a';c.fillRect(0,bh-2*dpr,w,2*dpr);
+  const W=w/dpr;c.scale(dpr,dpr);c.textBaseline='middle';c.fillStyle='#eef3f6';c.font='700 14px system-ui,sans-serif';c.fillText(d.v.id+'  /  '+d.spec,12,16);
+  c.fillStyle='#93a6b4';c.font='12px system-ui,sans-serif';c.fillText(agStat(d.v)[0]+' in '+d.zone+'  \u00b7  health '+d.score+' / 100  \u00b7  battery '+d.b+' %',12,34);c.textAlign='right';c.fillText(d.at.toLocaleString(),W-12,16);
+  const k=Math.min(1,1400/Math.max(o.width,o.height)),q=document.createElement('canvas');q.width=Math.round(o.width*k);q.height=Math.round(o.height*k);const qc=q.getContext('2d');qc.imageSmoothingQuality='high';qc.drawImage(o,0,0,q.width,q.height);
+  const jpg=q.toDataURL('image/jpeg',.88);return{png:o.toDataURL('image/png'),jpg:jpg,bin:atob(jpg.slice(jpg.indexOf(',')+1)),w:q.width,h:q.height}}
+function agRepInit(){const p=$('#agrp'),bt=$('#agrb'),m=$('#agrm'),tx=$('#agrtx'),go=$('#agrgo'),R={f:'pdf',last:'',d:null,shot:null},say=(t,c)=>{m.className=c||'sub';m.textContent=t};
+  const take=()=>{const v=agV(),st=v&&AG.s[v.id];if(!st)return false;R.d=agRepData(v,st);R.shot=agShot(R.d);$('#agri').src=R.shot.png;$('#agrh').textContent='Vehicle report to Webex: '+v.id;
+    $('#agrs').innerHTML=[['Health',R.d.score+' / 100',R.d.sev==='High'?'var(--r)':R.d.sev==='Medium'?'var(--y)':'var(--g)'],['Findings',String(R.d.F.length),''],['Next maintenance',R.d.next,'']].map(a=>'<div><div class="l">'+a[0]+'</div><b'+(a[2]?' style="color:'+a[2]+'"':'')+'>'+esc(a[1])+'</b></div>').join('');return true};
+  const msg=()=>{const d=R.d;return '**'+ORG+'** · AGV and Forklift Telematics\n\n**Vehicle health report '+d.v.id+'** ('+d.spec+')\nHealth '+d.score+' / 100, '+d.sev.toLowerCase()+' risk.\n\n'+d.summary+(d.A.length?'\n\n'+d.A.slice(0,3).map(a=>'- '+a.p+': '+a.a+' ('+a.o+', '+(a.d?'within '+a.d+' day'+(a.d>1?'s':''):'now')+')').join('\n'):'')+'\n\n'+
+    (R.f==='pdf'?'The full report is attached as a PDF: predictive maintenance, performance, telematics and safety events.':'The full report is attached as a document, with appendices for the Splunk searches, the 30-day condition history and the telematics samples.')};
+  const sync=()=>{p.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===R.f));
+    $('#agrf').textContent=R.f==='pdf'?'PDF: summary, findings and actions, predictive maintenance, performance, telematics, safety events and an approvals block.':'Full document (HTML, opens in any browser or in Word, and prints to PDF): the PDF content plus appendices with the Splunk searches, condition history and telematics samples.';
+    if(!tx.value||tx.value===R.last)tx.value=msg();R.last=msg();$('#agrdl').textContent=R.f==='pdf'?'Download PDF':'Download document'};
+  const doc=async()=>{const fm=R.f,lg=fm==='pdf'?await pdfLogo():null,M=agRepModel(R.d,R.shot,fm==='html'),nm=R.d.id+(fm==='html'?'-full':'');
+    return fm==='pdf'?{type:'pdf',mime:'application/pdf',name:nm+'.pdf',bytes:bin8(pdfBuild(M,lg))}:{type:'html',mime:'text/html',name:nm+'.html',bytes:new TextEncoder().encode(repDocHtml(M))}};
+  const open=()=>{if(!take())return;p.hidden=false;bt.setAttribute('aria-expanded','true');pdfLogo();wxSpaceNote($('#agrsp'));$('#agtip').hidden=true;
+    $('#agrto').value=$('#agrto').value||AIM.wxTo||'';$('#agrtk').value=AIM.wxTok||'';$('#agrtk').placeholder=AIM.wxTok?'':'Paste the token from developer.webex.com';tx.value='';R.last='';sync();say('');go.disabled=false;
+    ($('#agrto').value?$('#agrtk').value?go:$('#agrtk'):$('#agrto')).focus()};
+  const close=()=>{p.hidden=true;bt.setAttribute('aria-expanded','false');bt.focus()};
+  bt.onclick=()=>p.hidden?open():close();$('#agrx').onclick=close;p.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();e.preventDefault();close()}});
+  p.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{R.f=b.dataset.f;sync()});
+  $('#agrr').onclick=()=>{if(!take())return;sync();say('Retaken with the latest readings.')};
+  $('#agrtkx').onclick=()=>{AIM.wxTok='';$('#agrtk').value='';say('Bot token cleared from this session.','ok')};
+  $('#agrdl').onclick=async()=>{const d=await doc();dlBlob(d.bytes,d.mime,d.name);say('Saved '+d.name+'.')};
+  $('#agrpv').onclick=async()=>{const d=await doc(),url=URL.createObjectURL(new Blob([d.bytes],{type:d.mime}));if(!window.open(url,'_blank'))say('The preview window was blocked. Use Download instead.','err');setTimeout(()=>URL.revokeObjectURL(url),120000)};
+  go.onclick=async()=>{const r=$('#agrto').value.trim(),tk=$('#agrtk').value.trim(),bad=wxChk(r,tk);if(bad){say(bad,'err');(/email/.test(bad)?$('#agrto'):/token/.test(bad)?$('#agrtk'):go).focus();return}
+    const d=await doc();if(d.bytes.length>8e6)return say('The report is larger than 8 MB. Make the window smaller and press Retake, or use the PDF format.','err');
+    AIM.wxTok=tk;AIM.wxTo=r;say('Sending '+d.name+'\u2026');go.disabled=true;
+    const res=await wxFile({to:r,tk:tk,md:tx.value,type:d.type,name:d.name,b64:u8b64(d.bytes)});go.disabled=false;
+    if(!res.ok){if(res.st===401)$('#agrtk').value='';return say(res.msg,'err')}
+    const dst=wxDest(res.space,r);say('Sent '+d.name+' to '+dst+' at '+hms()+' UTC.'+(res.id?' Message ID '+res.id:''),'ok');wxLog(res.id,dst,'Vehicle report '+R.d.v.id+' ('+d.type.toUpperCase()+')');toast('Vehicle report '+R.d.v.id+' sent to '+(res.space?'space '+res.space:r)+' on Webex')}}
 function agTip(){const S=AG.S,tip=$('#agtip'),v=agV();if(!AG.hov||S.drag||!v){tip.hidden=true;return}const st=AG.s[v.id],hw=(AGHW[agT(v)]||{})[AG.hov];if(!hw||!st){tip.hidden=true;return}
   const c=agMdl(v,st,0).C.find(q=>q.k===AG.hov),cs=agCS(AG.hov,v,st),r=(a,b)=>'<div class="r"><span>'+a+'</span><b>'+b+'</b></div>';
   tip.innerHTML='<div class="h"><b>'+c.n+'. '+esc(c.t)+'</b><span class="'+(cs==='g'?'pp':cs==='y'?'pw':'pf')+'">'+(cs==='g'?'OK':cs==='y'?'Warning':'Fault')+'</span></div><div style="margin-bottom:6px;color:#c9d4dc">'+esc(hw[0])+'</div>'+r('Live',esc(agVal(AG.hov,v,st)))+r('Vehicle',v.id+', '+agT(v))+r('Splunk sourcetype',hw[1])+'<div style="margin-top:6px;color:#6f8393">Click to pin it in Vehicle telematics</div>';
@@ -3992,7 +4158,7 @@ function agInit(){if(AG.init)return;AG.init=true;agWarm();const cv=$('#agc3'),rm
   $('#age').addEventListener('click',e=>{const r=e.target.closest('tr[data-e]');if(!r)return;const x=AG.ev[+r.dataset.e];if(!x)return;agSel(x.v);
     showM('Safety event on '+x.v,pl(x.sev==='b'?'pf':x.sev==='w'?'pw':'pi',x.sev==='b'?'Impact':x.sev==='w'?'Warning':'Info'),gridH([['Time (UTC)',x.ts],['Vehicle',x.v],['Event',esc(x.ty)],['Source',esc(x.src)],['Zone',esc(x.z)],['Camera',esc((MVC.find(c=>x.src.indexOf(c[0])>=0)||[])[0]||'nearest Meraki MV camera')]])+
       '<div class="bn" style="margin-top:10px">In production this row opens the Meraki MV video clip at the event time through the Meraki Dashboard API camera video link for that camera, so the safety lead sees the footage next to the UWB track and Edge Hub readings.</div>','<button id="mc">Close</button>');$('#mc').onclick=closeM});
-  agSpl()}
+  agSpl();agRepInit()}
 function agOn(){return!$('#m-agv').classList.contains('off')||!!(PNO&&PN[PNO]&&PN[PNO].ag)}
 function agLoop(now){if(!agOn()){AG.raf=0;return}const t=now/1000,dt=Math.min(.1,AG.last?t-AG.last:.016);AG.last=t;
   if(!WA.raf&&!paused){WA.t=t;wmEnsure();wmStep(dt)}if(!paused){agPpl(dt);(WA.veh||[]).forEach(v=>agUpd(v,dt))}
