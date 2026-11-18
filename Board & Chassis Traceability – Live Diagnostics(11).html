@@ -530,7 +530,7 @@ main>.mg{border-radius:3px;overflow:hidden}main>.mg>div{padding:10px 14px}main>.
 <div><label for="wmq">Search stock</label><input id="wmq" placeholder="Part, lot or location"></div><div><label>Shift clock (simulated)</label><b id="wmc" style="font-size:18px">08:00</b></div><div class="sub lgd" style="margin-left:auto;padding-bottom:6px"><i style="background:var(--g)"></i>Ready or done<i style="background:var(--c)"></i>Active<i style="background:var(--y)"></i>Partial or waiting<i style="background:var(--r)"></i>Blocked or overdue<i style="background:var(--mu)"></i>Scheduled</div></div>
 <div class="mg" id="wmk" style="grid-column:1/-1;grid-row:2;grid-template-columns:repeat(4,1fr)"></div>
 <section class="pn" style="grid-column:1/9;grid-row:3;--o:1"><h2>Warehouse floor map <span id="wmmh">click for detail, right-click for routing, congestion and UWB options</span></h2><div style="overflow:auto"><div id="wmm" style="position:relative;min-width:720px"><div id="wmmap"></div><svg id="wmov" viewBox="0 0 780 410" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none" aria-hidden="true"></svg></div></div>
-<div class="scc mit" id="wmoc" style="padding:4px 12px 0"><b>Overlays</b><button data-o="agv" aria-pressed="false" title="Animate forklifts and robots on their task routes">Vehicle routing</button><button data-o="flow" aria-pressed="false" title="Animate product moving between docks, storage, kitting and shipping">Product movement</button><button data-o="heat" aria-pressed="false" title="Highlight slow-down zones and congestion">Congestion and slow-downs</button><button data-o="uwb" aria-pressed="false" title="Ultra-wideband positioning anchors, coverage heat map and gap areas">UWB coverage</button><span class="sub">or right-click the map</span></div><div id="wmvh" class="sub" style="padding:6px 12px 10px;height:124px;box-sizing:border-box;overflow-y:auto"></div></section>
+<div class="scc mit" id="wmoc" style="padding:4px 12px 0"><b>Overlays</b><button data-o="agv" aria-pressed="false" title="Animate forklifts and robots on their task routes">Vehicle routing</button><button data-o="flow" aria-pressed="false" title="Animate product moving between docks, storage, kitting and shipping">Product movement</button><button data-o="heat" aria-pressed="false" title="Highlight slow-down zones and congestion">Congestion and slow-downs</button><button data-o="uwb" aria-pressed="false" title="Ultra-wideband positioning anchors, coverage heat map and gap areas">UWB coverage</button><button data-o="net" aria-pressed="false" title="Network cabling, wiring closets, access points, cameras, dock switches and Wi-Fi coverage">Network layout</button><span class="sub">or right-click the map</span></div><div id="wmvh" class="sub" style="padding:6px 12px 10px;height:124px;box-sizing:border-box;overflow-y:auto"></div></section>
 <div class="wmside" style="grid-column:9/13;grid-row:3"><section class="pn" style="--o:2"><h2>Receiving docks <span>appointments from inbound shipments</span></h2><div class="tw"><table><thead><tr><th>Door and shipment</th><th>Appointment</th><th>Status</th><th></th></tr></thead><tbody id="wmd"></tbody></table></div></section>
 <section class="pn wmlab" style="--o:4"><h2>Labor and equipment</h2><div class="wmls"><div class="tw"><table><thead><tr><th>Operator</th><th>Role</th><th>Doing</th><th>Utilization</th></tr></thead><tbody id="wmo"></tbody></table></div><div class="tw" style="border-top:1px solid var(--ln)"><table><thead><tr><th>Equipment</th><th>Type</th><th>Battery</th><th>Status</th></tr></thead><tbody id="wme"></tbody></table></div></div></section></div>
 <section class="pn" style="grid-column:1/13;grid-row:4;--o:3"><h2>Work queue <span id="wmtn"></span></h2><div class="tw" style="max-height:430px;overflow:auto"><table><thead><tr><th>Task</th><th>Type</th><th>Pri</th><th>Item</th><th>From to</th><th>Operator</th><th>Status</th><th></th></tr></thead><tbody id="wmt"></tbody></table></div></section>
@@ -2663,7 +2663,7 @@ $('#wmkit').addEventListener('click',e=>{const b=e.target.closest('[data-kit]');
 $('#wmcc').addEventListener('click',e=>{const b=e.target.closest('[data-adj]');if(b){WM.adj.add(b.dataset.adj);scAlert('info','Inventory adjusted after count '+b.dataset.adj);wmRender(true)}});
 
 // ===== Warehouse vehicle routing, product movement, congestion and UWB coverage
-const WA={on:{agv:false,flow:false,heat:false,uwb:false},a:{agv:0,flow:0,heat:0,uwb:0},fg:null,uwbOff:new Set(),ug:null,flowRef:'',veh:null,vk:-1,tmp:[],heat:{},seg:{},zs:{},raf:0,last:0,t:0,hk:-1,n:0,ctx:'',alerted:false,rm:matchMedia('(prefers-reduced-motion: reduce)').matches};
+const WA={on:{agv:false,flow:false,heat:false,uwb:false,net:false},a:{agv:0,flow:0,heat:0,uwb:0,net:0},fg:null,uwbOff:new Set(),ug:null,flowRef:'',veh:null,vk:-1,tmp:[],heat:{},seg:{},zs:{},raf:0,last:0,t:0,hk:-1,n:0,ctx:'',alerted:false,rm:matchMedia('(prefers-reduced-motion: reduce)').matches};
 /*
  * VEHICLE ROUTING DATA
  * WZ  slow-down zones {name, rect, speed factor, reason}.   WS  lane segments used for
@@ -2782,6 +2782,7 @@ function wmVehSvg(v,lb){const lg=v.legs[v.li],c='var(--'+WMVC(v)+')',slow=v.fac<
  * ending in a pulsing target.
  */
 function wmOv(){const D=WM.D,a=WA.a,lb=[];if(!D)return;let s=WMDEFS;
+  if(a.net>.01)s+='<g style="opacity:'+a.net.toFixed(2)+'">'+netOv(lb)+'</g>';
   if(a.uwb>.01)s+='<g style="opacity:'+a.uwb.toFixed(2)+'">'+uwbOv(lb)+'</g>';
   if(a.heat>.01)s+='<g style="opacity:'+a.heat.toFixed(2)+'">'+wmHeat(lb)+'</g>';
   if(a.flow>.01)s+='<g style="opacity:'+a.flow.toFixed(2)+'">'+wmFlow(D)+'</g>';
@@ -2841,6 +2842,73 @@ function uwbOv(lb){const g=uwbGrid();let s='<image href="'+g.url+'" x="0" y="0" 
   [['g','4+ precise'],['y','3 fix'],['o','2 weak'],['r','0-1 gap']].forEach(l=>{s+='<rect x="'+x+'" y="398.5" width="12" height="7" rx="2" style="fill:'+uwbC(l[0])+';opacity:.8"/><text x="'+(x+15)+'" y="405" style="font-size:9px;fill:var(--mu)">'+l[1]+'</text>';x+=l[1].length*4.6+24});
   return s}
 /*
+ * WAREHOUSE NETWORK LAYOUT (Network layout overlay), in map units (10 units = 1 m).
+ * NIDF  wiring closets [id, x, y, equipment, switches in the stack]. IDF-01 holds the fiber uplink to the MDF,
+ *       where the Catalyst 9800 wireless controller and the core switches sit.
+ * NIE   rugged Catalyst IE3400 switches on the dock walls [id, x, y, closet, doors as [door, x, y]].
+ * NTR   ceiling cable-tray runs [x1, y1, x2, y2], horizontal or vertical. NFB fiber routes along the trays.
+ * netDevs() drops every PoE device from its nearest tray and homes it on the closest closet; the run length is
+ * measured along the tray grid plus 3 m of service loop. Cat6A is rated to 100 m including patch cords, so
+ * copper runs over 90 m are flagged.
+ */
+const NIDF=[['IDF-01',112,364,'2 x Cisco Catalyst 9300X-48HX stack, UPS, 2 x 10G fiber to MDF',2],['IDF-02',680,238,'Cisco Catalyst 9300X-48HX, UPS',1]],
+  NIE=[['IE-RCV',6,200,'IDF-01',[0,1,2,3,4,5].map(i=>['D'+(i+1),2,58+i*57])],['IE-SHP',700,350,'IDF-02',[628,686,743].map((x,i)=>['S'+(i+1),x,394])]],
+  NTR=[[6,6,774,6],[6,6,6,404],[166,6,166,404],[584,6,584,404],[774,6,774,404],[6,404,774,404],[166,153,584,153],[166,300,584,300],[584,238,774,238]],
+  NFB=[['IDF-01','IDF-02','Closet interconnect, 2 x 10G',[[112,364],[166,364],[166,300],[584,300],[584,238],[680,238]]],['IDF-01','IE-RCV','Dock switch uplink, 1G',[[112,364],[112,404],[6,404],[6,200]]],
+    ['IDF-02','IE-SHP','Dock switch uplink, 1G',[[680,238],[584,238],[584,404],[700,404],[700,350]]],['IDF-01','MDF','Uplink to MDF and WLC-01, 2 x 10G',[[112,364],[112,384],[0,384]]]],
+  NPOE=1440,NOR='#f1813f';
+function netPrj(x,y){let b=null;NTR.forEach(t=>{const h=t[1]===t[3],px=h?clamp(x,Math.min(t[0],t[2]),Math.max(t[0],t[2])):t[0],py=h?t[1]:clamp(y,Math.min(t[1],t[3]),Math.max(t[1],t[3])),d=Math.hypot(px-x,py-y);if(!b||d<b.d)b={x:px,y:py,d:d}});return b}
+const netLen=P=>P.reduce((a,p,i)=>i?a+Math.hypot(p[0]-P[i-1][0],p[1]-P[i-1][1]):0,0),
+  netAt=(P,f)=>{let L=netLen(P)*f;for(let i=1;i<P.length;i++){const d=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]);if(L<=d||i===P.length-1){const k=d?Math.min(1,L/d):0;return[P[i-1][0]+(P[i][0]-P[i-1][0])*k,P[i-1][1]+(P[i][1]-P[i-1][1])*k]}L-=d}return P[0]};
+let NETD=null;
+function netDevs(){if(NETD)return NETD;const L=[],n={},port=c=>{n[c]=(n[c]||0)+1;return 'Te'+(1+Math.floor((n[c]-1)/48))+'/0/'+((n[c]-1)%48+1)};
+  const add=(id,mdl,x,y,k,w,role,ref)=>{const p=netPrj(x,y),c=NIDF.map(q=>({q:q,d:Math.abs(p.x-q[1])+Math.abs(p.y-q[2])})).sort((a,b)=>a.d-b.d)[0];
+    L.push({id:id,mdl:mdl,x:x,y:y,k:k,w:w,role:role,ref:ref,p:p,cl:c.q[0],port:port(c.q[0]),run:Math.round((p.d+c.d+30)/10),link:k==='ap'?'mGig PoE, Cat6A':'PoE, Cat6A'})};
+  UWA.forEach(a=>add('AP-'+a[0].slice(2),'Cisco Catalyst CW9178I',a[1],a[2],'ap',32.4,'Wi-Fi 7 access point with UWB anchor',a[0]));
+  MVC.forEach(c=>add(c[0],'Meraki '+c[1],c[2],c[3],'cam',c[1]==='MV93X'?21:12.9,'Camera, '+c[4]));
+  AGEH.forEach(e=>add(e[0],'Splunk Edge Hub',e[1],e[2],'eh',12,e[3]));
+  NIE.forEach(s=>{const f=NFB.find(q=>q[1]===s[0]);L.push({id:s[0],mdl:'Cisco Catalyst IE3400',x:s[1],y:s[2],k:'ie',w:0,role:'Rugged dock switch, powers the door controllers',p:{x:s[1],y:s[2],d:0},cl:s[3],port:'Te1/1/'+(s[0]==='IE-RCV'?3:1),run:Math.round(netLen(f[3])/10)+5,link:'Single-mode fiber'});
+    s[4].forEach((d,i)=>L.push({id:'DC-'+d[0],mdl:'Dock door controller',x:d[1],y:d[2],k:'dc',w:8,role:'Door '+d[0]+' sensors, leveler and light curtain',p:{x:s[1],y:s[2],d:0},cl:s[0],port:'Gi1/0/'+(i+1),run:Math.round((Math.abs(d[1]-s[1])+Math.abs(d[2]-s[2]))/10)+3,link:'PoE, Cat6A'}))});
+  return NETD=L}
+function netStat(d){return d.k==='ap'&&WA.uwbOff.has(d.ref)?['pw','UWB radio offline']:d.run>90&&d.link.indexOf('Cat6A')>=0?['pf','Run over 90 m']:['pp',d.k==='ie'?'Connected':'Online']}
+function netSum(){const L=netDevs(),cu=L.filter(d=>d.link.indexOf('Cat6A')>=0&&d.k!=='dc'),cl=NIDF.map(c=>{const w=L.filter(d=>d.cl===c[0]).reduce((a,d)=>a+d.w,0);return{id:c[0],w:w,b:NPOE*c[4],n:L.filter(d=>d.cl===c[0]).length}}),mx=cu.reduce((a,d)=>d.run>a.run?d:a,cu[0]);
+  return{L:L,cl:cl,mx:mx,over:cu.filter(d=>d.run>90).length,w:cl.reduce((a,c)=>a+c.w,0),b:cl.reduce((a,c)=>a+c.b,0),warn:L.filter(d=>netStat(d)[0]!=='pp').length}}
+/*
+ * netOv(): Wi-Fi cells and camera views, cable trays, PoE drops, fiber routes with moving traffic, closets,
+ * dock switches and devices. The legend is in the status line under the map.
+ */
+function netOv(lb){const L=netDevs(),tx='paint-order:stroke;stroke:var(--pn);stroke-width:2.5px',lab=(x,y,t,c)=>'<text x="'+clamp(x,14,766)+'" y="'+y+'" text-anchor="middle" style="font-size:6.5px;font-weight:700;fill:'+(c||'var(--tx)')+';'+tx+'">'+t+'</text>';
+  let s='<defs><radialGradient id="nwg"><stop offset="0" style="stop-color:var(--c);stop-opacity:.32"/><stop offset=".7" style="stop-color:var(--c);stop-opacity:.12"/><stop offset="1" style="stop-color:var(--c);stop-opacity:0"/></radialGradient></defs>';
+  L.filter(d=>d.k==='ap').forEach(d=>{s+='<circle cx="'+d.x+'" cy="'+d.y+'" r="140" style="fill:url(#nwg);stroke:var(--c);stroke-width:.8;stroke-opacity:.22"/>'});
+  L.filter(d=>d.k==='cam').forEach(d=>{s+='<circle cx="'+d.x+'" cy="'+d.y+'" r="'+MVR+'" style="fill:var(--p);fill-opacity:.04;stroke:var(--p);stroke-width:.8;stroke-dasharray:2 4;opacity:.7"/>'});
+  NTR.forEach(t=>{s+='<line x1="'+t[0]+'" y1="'+t[1]+'" x2="'+t[2]+'" y2="'+t[3]+'" style="stroke:var(--mu);stroke-width:5;opacity:.28;stroke-linecap:round"/><line x1="'+t[0]+'" y1="'+t[1]+'" x2="'+t[2]+'" y2="'+t[3]+'" style="stroke:var(--mu);stroke-width:5;opacity:.5;stroke-dasharray:1 5"/>'});
+  L.forEach(d=>{const st=netStat(d)[0],c=st==='pf'?'var(--r)':'var(--g)';if(d.k==='dc'){const ie=NIE.find(q=>q[0]===d.cl);s+='<polyline points="'+ie[1]+','+ie[2]+' '+(d.x===2?ie[1]:d.x)+','+(d.x===2?d.y:ie[2])+' '+d.x+','+d.y+'" style="fill:none;stroke:var(--g);stroke-width:.9;opacity:.6"/>'}
+    else if(d.k!=='ie'&&d.p.d>.5)s+='<line x1="'+d.x+'" y1="'+d.y+'" x2="'+d.p.x.toFixed(1)+'" y2="'+d.p.y.toFixed(1)+'" style="stroke:'+c+';stroke-width:1.1;opacity:.75"/><circle cx="'+d.p.x.toFixed(1)+'" cy="'+d.p.y.toFixed(1)+'" r="1.4" style="fill:'+c+';opacity:.8"/>'});
+  NFB.forEach((f,i)=>{s+='<polyline points="'+f[3].map(p=>p.join(',')).join(' ')+'" style="fill:none;stroke:'+NOR+';stroke-width:1.8;opacity:.8;stroke-linejoin:round;stroke-dasharray:6 3;stroke-dashoffset:'+(-WA.t*12%9).toFixed(2)+'"/>';
+    [0,.5].forEach(o=>{const q=netAt(f[3],(WA.t*.18+i*.23+o)%1);s+='<circle cx="'+q[0].toFixed(1)+'" cy="'+q[1].toFixed(1)+'" r="1.8" style="fill:'+NOR+'"/>'})});
+  s+=lab(70,378,'to MDF, 2 x 10G',NOR);
+  L.forEach(d=>{const st=netStat(d)[0],ring=st==='pp'?'':'stroke:var(--'+(st==='pf'?'r':'y')+');stroke-width:1.6;';
+    if(d.k==='ap')s+='<g transform="translate('+d.x+' '+d.y+')"><circle r="5.5" style="fill:var(--pn);stroke:var(--c);stroke-width:1.2;'+ring+'"/><path d="M-3 -.5Q0 -3.4 3 -.5M-1.7 1Q0 -.6 1.7 1" style="fill:none;stroke:var(--c);stroke-width:.9;stroke-linecap:round"/><circle cy="2.4" r=".8" style="fill:var(--c)"/></g>'+(WA.on.uwb?'':lab(d.x,d.y<30?d.y+14:d.y-9,d.id,'var(--c)'));
+    else if(d.k==='cam')s+='<g transform="translate('+d.x+' '+d.y+')"><rect x="-5.5" y="-4" width="11" height="8" rx="2" style="fill:var(--pn);stroke:var(--p);stroke-width:1.1"/><circle r="2" style="fill:var(--p)"/></g>'+lab(d.x,d.y+13,d.id,'var(--p)');
+    else if(d.k==='eh')s+='<g transform="translate('+d.x+' '+d.y+')"><path d="M-5 -3L0 -6L5 -3L5 3L0 6L-5 3Z" style="fill:#e2007a;stroke:var(--tx);stroke-width:.8"/></g>'+lab(d.y>380?d.x+30:d.x,d.y>380?d.y+3:d.y+14,d.id,'#e2007a');
+    else if(d.k==='dc')s+='<rect x="'+(d.x-2.5)+'" y="'+(d.y-2.5)+'" width="5" height="5" rx="1" style="fill:var(--g);opacity:.85"/>';
+    else if(d.k==='ie')s+='<g transform="translate('+d.x+' '+d.y+')"><rect x="-7" y="-4.5" width="14" height="9" rx="1.5" style="fill:var(--pn);stroke:'+NOR+';stroke-width:1.2"/><path d="M-4 0h8" style="stroke:'+NOR+';stroke-width:1"/></g>'+lab(d.x+(d.x<20?16:0),d.y+(d.x<20?2.5:14),d.id,NOR)});
+  NIDF.forEach(c=>{s+='<g transform="translate('+c[1]+' '+c[2]+')"><rect x="-11" y="-8" width="22" height="16" rx="2" style="fill:var(--pn);stroke:var(--tx);stroke-width:1.2"/>'+[-4,0,4].map(y=>'<path d="M-7 '+y+'h14" style="stroke:'+NOR+';stroke-width:1.4"/>').join('')+'</g>'+lab(c[1]-(c[2]<300?32:0),c[2]+(c[2]<300?2.5:-12),c[0])});
+  return s}
+/*
+ * netReport(): closets and PoE budget, every device with its closet port, link, run length and PoE draw, and the
+ * fiber routes.
+ */
+function netReport(){const S=netSum(),L=S.L,zn=d=>uwbZone(d.x,d.y);
+  showM('Network layout report',pl(S.over?'pf':S.warn?'pw':'pp',S.over?S.over+' run'+(S.over>1?'s':'')+' over 90 m':S.warn?S.warn+' device'+(S.warn>1?'s':'')+' with warnings':'All links in spec'),
+    '<div class="bn'+(S.over||S.warn?' bad':'')+'"><b>'+L.filter(d=>d.k==='ap').length+' Wi-Fi 7 access points, '+L.filter(d=>d.k==='cam').length+' Meraki MV cameras, '+L.filter(d=>d.k==='eh').length+' Splunk Edge Hubs and '+NIE.length+' dock switches on '+NIDF.length+' wiring closets.</b> Each device is cabled from the nearest ceiling tray to the closest closet. Longest copper run '+S.mx.id+' at '+S.mx.run+' m against the 100 m Cat6A limit. The wireless controller WLC-01 and the core switches are in the MDF, reached over the IDF-01 fiber uplink.</div>'+
+    gridH(S.cl.map(c=>[c.id+' PoE',c.w.toFixed(0)+' W of '+c.b+' W, '+c.n+' devices']).concat([['PoE total',S.w.toFixed(0)+' W of '+S.b+' W ('+(S.w/S.b*100).toFixed(0)+' %)'],['Longest copper run',S.mx.id+', '+S.mx.run+' m'],['Fiber',NFB.length+' routes, '+Math.round(NFB.reduce((a,f)=>a+netLen(f[3]),0)/10)+' m'],['Cable tray',Math.round(NTR.reduce((a,t)=>a+Math.hypot(t[2]-t[0],t[3]-t[1]),0)/10)+' m']]))+
+    '<div><h4>Wiring closets</h4>'+tbH(['Closet','Equipment','Zone','Devices','PoE'],NIDF.map(c=>{const q=S.cl.find(z=>z.id===c[0]);return trH([c[0],c[3],uwbZone(c[1],c[2]),q.n,q.w.toFixed(0)+' of '+q.b+' W'])}))+'</div>'+
+    '<div><h4>Devices</h4>'+tbH(['Device','Model','Role','Zone','Switch port','Link','Run','PoE','Status'],L.map(d=>{const st=netStat(d);return trH([d.id,d.mdl,esc(d.role),zn(d),d.cl+' '+d.port,d.link,d.run+' m',d.w?d.w+' W':'-',pl(st[0],st[1])])}))+'</div>'+
+    '<div><h4>Fiber routes</h4>'+tbH(['From','To','Purpose','Length'],NFB.map(f=>trH([f[0],f[1],f[2],Math.round(netLen(f[3])/10)+' m'])))+'</div>',
+    '<button id="wmN2">'+(WA.on.net?'Hide':'Show')+' network overlay</button><button id="mc">Close</button>');
+  $('#dlg').className='dlg xl';$('#mc').onclick=closeM;$('#wmN2').onclick=()=>{WA.on.net=!WA.on.net;closeM();wmOvSync()}}
+/*
  * uwbReport(): coverage breakdown, gap areas with a suggested anchor position, and each anchor
  * with the floor area it reaches. Anchors can be taken offline to see the effect of an outage.
  */
@@ -2856,15 +2924,16 @@ function uwbReport(){const g=uwbGrid(),pc=i=>(g.cnt[i]/g.tot*100).toFixed(0)+' %
 function uwbToggle(id,rep){const off=WA.uwbOff.has(id);if(off)WA.uwbOff.delete(id);else WA.uwbOff.add(id);const g=uwbGrid();
   scAlert(off?'info':'warn','UWB anchor '+id+(off?' restored':' offline')+', '+g.gaps.length+' coverage gap'+(g.gaps.length===1?'':'s')+' on the floor');wmHud();if(rep)uwbReport()}
 function wmHud(){const all=(WA.veh||[]).concat(WA.tmp),sl=all.filter(v=>v.fac<.7&&v.dwell<=0).length,on=WA.on;
-  $('#wmvh').innerHTML=(on.agv||WA.tmp.length)?all.filter(v=>on.agv||v.tmp).map(v=>'<span style="display:inline-block;margin:0 14px 3px 0"><b class="mono">'+v.id+'</b> '+(v.dwell>0?'loading':v.fac<.7?'<span class="wn">slowed, '+esc(v.why)+'</span>':'moving')+', '+Math.round(v.speed*v.fac*.3)+' km/h'+(v.legs[v.li].loaded?', loaded':'')+(on.uwb?', UWB '+(u=>u[1]==='r'?'<span class="hot">'+u[0]+'</span>':u[0])(uwbAcc(uwbAt(v.x,v.y))):'')+(v.tmp?', '+esc(v.label):'')+'</span>').join(''):(on.heat?'Hatched zones are speed-limited. Red cells are where vehicles queued; corridors turn amber or red as average speed drops.':on.flow||on.uwb?'':'Turn on an overlay to see live vehicle status, congestion and UWB coverage here.');
+  $('#wmvh').innerHTML=(on.agv||WA.tmp.length)?all.filter(v=>on.agv||v.tmp).map(v=>'<span style="display:inline-block;margin:0 14px 3px 0"><b class="mono">'+v.id+'</b> '+(v.dwell>0?'loading':v.fac<.7?'<span class="wn">slowed, '+esc(v.why)+'</span>':'moving')+', '+Math.round(v.speed*v.fac*.3)+' km/h'+(v.legs[v.li].loaded?', loaded':'')+(on.uwb?', UWB '+(u=>u[1]==='r'?'<span class="hot">'+u[0]+'</span>':u[0])(uwbAcc(uwbAt(v.x,v.y))):'')+(v.tmp?', '+esc(v.label):'')+'</span>').join(''):(on.heat?'Hatched zones are speed-limited. Red cells are where vehicles queued; corridors turn amber or red as average speed drops.':on.flow||on.uwb||on.net?'':'Turn on an overlay to see live vehicle status, congestion, UWB coverage and the network layout here.');
   if(on.uwb){const g=uwbGrid();$('#wmvh').innerHTML+='<div style="margin-top:3px"><b>UWB:</b> '+((g.cnt[0]+g.cnt[1])/g.tot*100).toFixed(0)+' % of the floor has a 2D fix ('+(g.cnt[0]/g.tot*100).toFixed(0)+' % precise), '+(UWA.length-WA.uwbOff.size)+' of '+UWA.length+' anchors online, '+(g.gaps.length?'<span class="hot">'+g.gaps.length+' gap area'+(g.gaps.length>1?'s':'')+': '+g.gaps.slice(0,4).map(q=>q.n+' '+q.zone+' '+q.area+' m²').join(', ')+'</span>':'no gaps')+'. Right-click the map for the coverage report.</div>'}
-  $('#wmmh').textContent=(on.agv||on.flow||on.heat||on.uwb||WA.tmp.length)?(on.agv?all.length+' vehicles, '+sl+' slowed':'overlay on')+(on.heat?', congestion view':'')+(on.uwb?', UWB coverage':''):'click for detail, right-click for routing, congestion and UWB options'}
+  if(on.net){const N=netSum();$('#wmvh').innerHTML+='<div style="margin-top:3px"><b>Network:</b> '+NIDF.length+' wiring closets, '+N.L.filter(d=>d.k==='ap').length+' Wi-Fi 7 APs, '+N.L.filter(d=>d.k==='cam').length+' Meraki MV cameras, '+N.L.filter(d=>d.k==='eh').length+' Edge Hubs, '+NIE.length+' IE3400 dock switches. PoE '+N.w.toFixed(0)+' W of '+N.b+' W. Longest copper run '+N.mx.id+' '+(N.mx.run>90?'<span class="hot">'+N.mx.run+' m</span>':N.mx.run+' m')+' (Cat6A limit 100 m)'+(N.warn?', <span class="wn">'+N.warn+' device'+(N.warn>1?'s':'')+' with warnings</span>':', all links in spec')+'. Right-click the map for the network report.</div>'+'<div style="margin-top:3px">'+[['<circle cx="7" cy="6" r="4" style="fill:var(--pn);stroke:var(--c)"/>','Wi-Fi 7 AP and coverage'],['<rect x="2" y="3" width="10" height="7" rx="1.5" style="fill:var(--pn);stroke:var(--p)"/>','Meraki camera and view'],['<path d="M3 3.5L7 1L11 3.5L11 8.5L7 11L3 8.5Z" style="fill:#e2007a"/>','Edge Hub'],['<rect x="1" y="2" width="12" height="8" rx="1" style="fill:var(--pn);stroke:var(--tx)"/>','Wiring closet'],['<rect x="2" y="3" width="10" height="6" rx="1" style="fill:var(--pn);stroke:'+NOR+'"/>','IE3400 dock switch'],['<path d="M0 6h14" style="stroke:var(--g);stroke-width:1.6"/>','PoE copper'],['<path d="M0 6h14" style="stroke:'+NOR+';stroke-width:2;stroke-dasharray:4 2"/>','Fiber'],['<path d="M0 6h14" style="stroke:var(--mu);stroke-width:5;opacity:.5"/>','Cable tray']].map(l=>'<span style="display:inline-block;margin-right:12px;white-space:nowrap"><svg width="14" height="12" style="vertical-align:-2px;margin-right:4px">'+l[0]+'</svg>'+l[1]+'</span>').join('')+'</div>'}
+  $('#wmmh').textContent=(on.agv||on.flow||on.heat||on.uwb||on.net||WA.tmp.length)?(on.agv?all.length+' vehicles, '+sl+' slowed':'overlay on')+(on.heat?', congestion view':'')+(on.uwb?', UWB coverage':'')+(on.net?', network layout':''):'click for detail, right-click for routing, congestion, UWB and network options'}
 function wmLoop(now){
   if(!wmAny()||$('#m-wm').classList.contains('off')){WA.raf=0;$('#wmov').innerHTML='';return}
   const t=now/1000,dt=WA.rm?.5:Math.min(.1,WA.last?t-WA.last:.016);WA.last=t;WA.t=t;wmEnsure();
-  ['agv','flow','heat','uwb'].forEach(k=>{const g=WA.on[k]?1:0;WA.a[k]=WA.rm||Math.abs(g-WA.a[k])<.01?g:WA.a[k]+(g-WA.a[k])*Math.min(1,dt*6)});wmStep(dt);wmOv();const h=Math.floor(t*2);if(h!==WA.hk){WA.hk=h;wmHud()}
+  ['agv','flow','heat','uwb','net'].forEach(k=>{const g=WA.on[k]?1:0;WA.a[k]=WA.rm||Math.abs(g-WA.a[k])<.01?g:WA.a[k]+(g-WA.a[k])*Math.min(1,dt*6)});wmStep(dt);wmOv();const h=Math.floor(t*2);if(h!==WA.hk){WA.hk=h;wmHud()}
   WA.raf=WA.rm?setTimeout(()=>wmLoop(performance.now()),500):requestAnimationFrame(wmLoop)}
-const wmAny=()=>WA.on.agv||WA.on.flow||WA.on.heat||WA.on.uwb||WA.tmp.length>0||WA.a.agv>0||WA.a.flow>0||WA.a.heat>0||WA.a.uwb>0;
+const wmAny=()=>WA.on.agv||WA.on.flow||WA.on.heat||WA.on.uwb||WA.on.net||WA.tmp.length>0||WA.a.agv>0||WA.a.flow>0||WA.a.heat>0||WA.a.uwb>0||WA.a.net>0;
 function wmStart(){if(!WA.raf&&!$('#m-wm').classList.contains('off')){WA.last=0;WA.raf=1;wmLoop(performance.now())}}
 function wmOvSync(){document.querySelectorAll('#wmoc [data-o]').forEach(b=>b.setAttribute('aria-pressed',!!WA.on[b.dataset.o]));wmHud();if(WA.on.heat&&!Object.keys(WA.seg).length){wmSim(15)}
   if(wmAny())wmStart();else{$('#wmov').innerHTML=''}}
@@ -2884,12 +2953,13 @@ $('#wmm').addEventListener('contextmenu',e=>{
   else if(t==='kit'){title='Kit cart '+id;it.push(['w:kitd','Kit details'],['w:kitdel','Animate kit delivery to '+id],'-')}
   else if(t==='cage'){const q=D.cage[+id];title='Quarantine lot '+(q?q.lot:'');it.push(['w:cage','Lot details'],['w:qdel','Animate move to quarantine'],'-')}
   else if(t==='cab'){title='Dry cabinet '+id;it.push(['w:cab','Cabinet details'],'-')}
-  it.push(['#','Overlays'],tg('agv',on.agv,'vehicle routing'),tg('flow',on.flow,'product movement'),tg('heat',on.heat,'congestion and slow-down zones'),tg('uwb',on.uwb,'UWB coverage and gaps'),['w:all',(on.agv&&on.flow&&on.heat&&on.uwb)?'Hide all overlays':'Show all overlays'],'-',['w:report','Traffic and congestion report'],['w:uwbrep','UWB coverage report']);
+  it.push(['#','Overlays'],tg('agv',on.agv,'vehicle routing'),tg('flow',on.flow,'product movement'),tg('heat',on.heat,'congestion and slow-down zones'),tg('uwb',on.uwb,'UWB coverage and gaps'),tg('net',on.net,'network layout and coverage'),['w:all',(on.agv&&on.flow&&on.heat&&on.uwb&&on.net)?'Hide all overlays':'Show all overlays'],'-',['w:report','Traffic and congestion report'],['w:uwbrep','UWB coverage report'],['w:netrep','Network layout report']);
   cmShow(e.clientX,e.clientY,esc(title),it)});
 function wmAct(k){const D=wmBuild(),c=WA.ctx||'',pr=c.split(':'),id=pr[1],cellOf=r2=>D.cells.find(q=>q.ref===r2&&q.qty>0)||D.cells.find(q=>q.ref===r2)||D.cells[0];
   if(k.indexOf('w:t-')===0){const o=k.slice(4);WA.on[o]=!WA.on[o];if(o==='flow'&&!WA.on.flow)WA.flowRef='';wmOvSync();return}
   if(k==='w:uwbrep'){uwbReport();return}
-  if(k==='w:all'){const v=!(WA.on.agv&&WA.on.flow&&WA.on.heat&&WA.on.uwb);WA.on={agv:v,flow:v,heat:v,uwb:v};if(!v)WA.flowRef='';wmOvSync();return}
+  if(k==='w:netrep'){netReport();return}
+  if(k==='w:all'){const v=!(WA.on.agv&&WA.on.flow&&WA.on.heat&&WA.on.uwb&&WA.on.net);WA.on={agv:v,flow:v,heat:v,uwb:v,net:v};if(!v)WA.flowRef='';wmOvSync();return}
   if(k==='w:bay'||k==='w:dock'||k==='w:kitd'||k==='w:cage'||k==='w:cab'){wmModal(c);return}
   if(k==='w:cc'){wmCount(id);return}
   if(k==='w:route'){const cell=D.cells.find(q=>q.id===id),d=D.docks.findIndex(q=>cell&&q.ref===cell.ref);wmDeliver(['dock',d<0?0:d],['bay',cell],'Delivery to bay '+id);return}
