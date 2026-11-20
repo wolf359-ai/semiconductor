@@ -219,6 +219,8 @@ tr.grp td{background:var(--pn2);color:var(--mu);font-weight:600;padding:5px 10px
 .db pre,.db textarea{margin:0;background:var(--pn2);border:1px solid var(--ln);border-radius:3px;padding:8px;color:var(--tx);font:12px ui-monospace,Menlo,monospace;white-space:pre-wrap;width:100%}.db textarea{height:220px;resize:vertical}
 .bn{border-left:3px solid var(--g);background:var(--pn2);padding:8px 12px}.bn.bad{border-left-color:var(--r)}
 .ai.ackd{opacity:.55}.bar{display:inline-block;width:56px;height:6px;background:var(--pn2);border:1px solid var(--ln);border-radius:3px;vertical-align:middle;margin-right:6px;overflow:hidden}.bar i{display:block;height:100%}#sq tr{cursor:pointer}#sq tr:hover{background:var(--pn2)}
+#tb tr,#lg tr{cursor:pointer}#tb tr:hover,#lg tr:hover{background:var(--pn2)}#tb tr.sel,#lg tr.sel,#sq tr.sel{background:color-mix(in srgb,var(--c) 18%,transparent);box-shadow:inset 3px 0 0 var(--c)}#tb tr.hl td,#lg tr.hl td{background:color-mix(in srgb,var(--c) 30%,transparent)}#tb tr:focus-visible,#lg tr:focus-visible,#sq tr:focus-visible{outline:2px solid var(--c);outline-offset:-2px}
+#dtb tr.cp.sh td{background:color-mix(in srgb,var(--y) 12%,transparent)}#dtb tr.cp.sh td:first-child{box-shadow:inset 3px 0 0 var(--y)}#dsum .lnk[aria-pressed=true]{outline:2px solid var(--c);outline-offset:2px;border-radius:2px}
 /*
  * TABS: the tab bar, and inactive tabs (main.off). Inactive tabs are collapsed off-screen
  * rather than display:none, so their charts keep a measurable width.
@@ -463,14 +465,16 @@ main>.mg{border-radius:3px;overflow:hidden}main>.mg>div{padding:10px 14px}main>.
 </main>
 <!--
   TAB: BOARD INTEGRATION (m-board): board picker, BOM drill-down (#drill), integration log, unit traceability, supplier scorecard.
+  Left-click on a row, the chassis ID or a 3D part only selects or highlights it; every dialog opens from the shared
+  right-click menu (#cm), which the context-menu key and Shift+F10 also open.
 -->
 <main id="m-board" class="off" role="tabpanel" aria-labelledby="tab-board">
 <div class="fbar" style="grid-column:1/-1;grid-row:1;justify-content:flex-start;border:1px solid var(--ln);border-radius:3px"><div><label for="bsel">Board</label><select id="bsel" style="min-width:340px"></select></div><div class="sub" style="padding-bottom:6px">Choose a board to see every component, supplier, lot and test result in its integration. Failed boards are listed first.</div></div>
-<section class="pn" id="drill" style="grid-column:1/13;grid-row:2;--o:1"><h2>Board integration drill-down <span>click a component row for details, right-click for investigation options</span></h2><div class="dsum" id="dsum"></div><div class="tw" style="max-height:420px;overflow:auto"><table><thead><tr><th>Ref</th><th>Component</th><th>Part number</th><th>Supplier</th><th>Lot / date code</th><th>Serial or ECID</th><th>Trace source</th><th>Test result</th></tr></thead><tbody id="dtb"></tbody></table></div></section>
+<section class="pn" id="drill" style="grid-column:1/13;grid-row:2;--o:1"><h2>Board integration drill-down <span>click a component row to select it, right-click for details and investigation options</span></h2><div class="dsum" id="dsum"></div><div class="tw" style="max-height:420px;overflow:auto"><table><thead><tr><th>Ref</th><th>Component</th><th>Part number</th><th>Supplier</th><th>Lot / date code</th><th>Serial or ECID</th><th>Trace source</th><th>Test result</th></tr></thead><tbody id="dtb"></tbody></table></div></section>
 <section class="pn" style="grid-column:1/13;grid-row:3;--o:2"><h2>System integration traceability log <input id="q" placeholder="Search" aria-label="Search log"></h2><div class="tw" style="max-height:340px;overflow:auto"><table><thead><tr><th>Timestamp</th><th>Chassis system ID</th><th>PCBA identifier</th><th>Silicon ECID</th><th>Wafer vector</th><th>Functional status</th></tr></thead><tbody id="lg" class="mono"></tbody></table></div></section>
-<section class="pn" style="grid-column:1/7;grid-row:4;--o:3"><h2>Unit traceability <span>board and chassis serials with the sensor envelope they saw</span></h2>
+<section class="pn" style="grid-column:1/7;grid-row:4;--o:3"><h2>Unit traceability <span>sensor envelope per board; click to select, right-click for trace and actions</span></h2>
     <div class="tw"><table><thead><tr><th>Board</th><th>Chassis</th><th>Lot</th><th>Step</th><th>Tool</th><th>Peak temp</th><th>Min flow</th><th>Status</th></tr></thead><tbody id="tb"></tbody></table></div></section>
-<section class="pn" style="grid-column:7/13;grid-row:4;--o:4"><h2>Supplier quality scorecard <span>worst score first, click a supplier for details</span></h2><div class="tw"><table><thead><tr><th>Supplier</th><th>Parts on board</th><th>Boards in review</th><th>DPPM</th><th>On-time delivery</th><th>Quality score</th></tr></thead><tbody id="sq"></tbody></table></div></section>
+<section class="pn" style="grid-column:7/13;grid-row:4;--o:4"><h2>Supplier quality scorecard <span>worst score first; click to highlight its parts, right-click for details</span></h2><div class="tw"><table><thead><tr><th>Supplier</th><th>Parts on board</th><th>Boards in review</th><th>DPPM</th><th>On-time delivery</th><th>Quality score</th></tr></thead><tbody id="sq"></tbody></table></div></section>
 </main>
 <!--
   TAB: SUPPLY CHAIN MAP (m-map): trace controls, summary figures (#scst) and the traceability graph. Trace results open in the shared modal.
@@ -744,8 +748,15 @@ function lineStats(){
 /*
  * System integration traceability log: rows linking chassis, PCBA, silicon ECID and wafer vector, filtered by the Yield filters and search.
  */
-function logRender(){const q=filt.toLowerCase();$('#lg').innerHTML=logRows.filter(r=>(fl.tool==='*'||r.tool===fl.tool)&&(fl.lot==='*'||r.lot===fl.lot)&&(fl.st==='*'||(fl.st==='pass'&&r.st==='PASS')||(fl.st==='fail'&&r.st==='FAIL'))&&(!q||Object.values(r).join(' ').toLowerCase().includes(q))).slice(0,14).map(r=>'<tr data-pc="'+r.pc+'" style="cursor:pointer" title="Open board drill-down"><td>'+r.ts+'</td><td>'+r.ch+'</td><td>'+r.pc+'</td><td>'+r.ec+'</td><td>'+r.vec+'</td><td><span class="'+(r.st==='PASS'?'pp':'pf')+'">'+r.st+'</span></td></tr>').join('')}
-let selUnit=null,dKey='',oKey='';let TW=240,fl={tool:'*',lot:'*',st:'*'},refresh=250,lastR=0,lotKey='',selRef='';
+/*
+ * Board rows in the traceability log (#lg) and unit traceability (#tb): left-click selects the board in place,
+ * right-click (or the context-menu key / Shift+F10) opens trMenu. Both lists re-render every refresh, so rows carry
+ * data-fk and keepF() puts keyboard focus back on the same row.
+ */
+const trCls=id=>(selUnit&&selUnit.id==id?'sel':'')+(chHl&&chHl==id?' hl':'');
+function keepF(el,html){const a=document.activeElement,k=a&&el.contains(a)&&a.dataset.fk;el.innerHTML=html;if(k){const n=el.querySelector('[data-fk="'+CSS.escape(k)+'"]');if(n)n.focus({preventScroll:true})}}
+function logRender(){const q=filt.toLowerCase();keepF($('#lg'),logRows.filter(r=>(fl.tool==='*'||r.tool===fl.tool)&&(fl.lot==='*'||r.lot===fl.lot)&&(fl.st==='*'||(fl.st==='pass'&&r.st==='PASS')||(fl.st==='fail'&&r.st==='FAIL'))&&(!q||Object.values(r).join(' ').toLowerCase().includes(q))).slice(0,14).map(r=>{const id=(/PCB-SUP-(\d+)A/.exec(r.pc)||[])[1]||'';return '<tr data-pc="'+r.pc+'" data-u="'+id+'" data-fk="lg'+r.ts+r.pc+'" tabindex="0" class="'+trCls(id)+'" title="Click to select this board, right-click for trace and actions"><td>'+r.ts+'</td><td>'+r.ch+'</td><td>'+r.pc+'</td><td>'+r.ec+'</td><td>'+r.vec+'</td><td><span class="'+(r.st==='PASS'?'pp':'pf')+'">'+r.st+'</span></td></tr>'}).join(''))}
+let selUnit=null,dKey='',oKey='',chHl='',selSup='',trM=null;let TW=240,fl={tool:'*',lot:'*',st:'*'},refresh=250,lastR=0,lotKey='',selRef='';
 /*
  * KPI, SPC, PARETO AND RISK STATE
  * KH  per-KPI history used for sparklines.   KD  direction (+1 higher is better).
@@ -798,9 +809,9 @@ function drillRender(){
   const ok=fa.concat(list).map(x=>x.id+(x.done?(x.flag?'F':'P'):'I')).join();
   if(ok!==oKey&&document.activeElement!==sel){oKey=ok;const op=x=>'<option value="'+x.id+'">'+x.sn+'  /  PCB-SUP-'+x.id+'A-02  /  '+(x.done?(x.flag?'REVIEW':'PASS'):'IN PROCESS')+'</option>';sel.innerHTML=(fa.length?'<optgroup label="Failed boards">'+fa.map(op).join('')+'</optgroup>':'')+'<optgroup label="Recent boards">'+list.map(op).join('')+'</optgroup>';sel.value=u.id}
   const bom=bomOf(u),items=bom.flatMap(g=>g[1]),nrev=u.done&&u.flag?items.filter(c=>c.crit).length:0;
-  const dh=[['Chassis system ID','<button class="lnk" data-3d="1" title="Open the 3D exploded view">SYS-'+u.ch.replace('CHS-','CH-')+'A-B <span class="b">3D</span></button>'],['PCBA identifier','PCB-SUP-'+u.id+'A-02'],['Board serial',u.sn],['Lot and tool',u.lot+' on '+u.tool],['Process step',u.done?'Complete':STEPS[u.st]],['Peak chamber temp',u.tmax.toFixed(1)+' °C'],['Min N₂ flow',u.fmin.toFixed(0)+' sccm'],['Line items / placed parts',items.length+' / '+u.placed],['Components for review',nrev],['Board status',upill(u)]].map(a=>'<div><div class="l">'+a[0]+'</div><b>'+a[1]+'</b></div>').join('');if(dh!==dsH){dsH=dh;$('#dsum').innerHTML=dh}
+  const dh=[['Chassis system ID','<button class="lnk" data-3d="1" data-fk="chs" aria-pressed="'+(chHl==u.id)+'" title="Click to highlight this chassis in the lists below, right-click for the 3D exploded view and board actions">SYS-'+u.ch.replace('CHS-','CH-')+'A-B <span class="b">3D</span></button>'],['PCBA identifier','PCB-SUP-'+u.id+'A-02'],['Board serial',u.sn],['Lot and tool',u.lot+' on '+u.tool],['Process step',u.done?'Complete':STEPS[u.st]],['Peak chamber temp',u.tmax.toFixed(1)+' °C'],['Min N₂ flow',u.fmin.toFixed(0)+' sccm'],['Line items / placed parts',items.length+' / '+u.placed],['Components for review',nrev],['Board status',upill(u)]].map(a=>'<div><div class="l">'+a[0]+'</div><b>'+a[1]+'</b></div>').join('');if(dh!==dsH){dsH=dh;keepF($('#dsum'),dh)}
   const dk=u.id+(u.done?(u.flag?'F':'P'):'I'+u.st);if(dk===dKey)return;dKey=dk;
-  $('#dtb').innerHTML=bom.map(g=>'<tr class="grp"><td colspan="8">'+g[0]+' ('+g[1].length+')</td></tr>'+g[1].map(c=>{const s=cstat(u,c);return '<tr class="cp'+(c.ref===selRef?' sel':'')+'" tabindex="0" data-r="'+c.ref+'"><td class="mono">'+c.ref+'</td><td>'+c.nm+'</td><td class="mono">'+c.pn+'</td><td>'+c.sup+'</td><td class="mono">'+c.lot+'</td><td class="mono">'+c.sn+'</td><td class="mono">'+c.tr+'</td><td><span class="'+s[0]+'">'+s[1]+'</span> '+s[2]+'</td></tr>'}).join('')).join('')}
+  $('#dtb').innerHTML=bom.map(g=>'<tr class="grp"><td colspan="8">'+g[0]+' ('+g[1].length+')</td></tr>'+g[1].map(c=>{const s=cstat(u,c);return '<tr class="cp'+(c.ref===selRef?' sel':'')+(c.sup===selSup?' sh':'')+'" tabindex="0" data-r="'+c.ref+'" data-s="'+c.sup+'" data-fk="dtb'+c.ref+'"><td class="mono">'+c.ref+'</td><td>'+c.nm+'</td><td class="mono">'+c.pn+'</td><td>'+c.sup+'</td><td class="mono">'+c.lot+'</td><td class="mono">'+c.sn+'</td><td class="mono">'+c.tr+'</td><td><span class="'+s[0]+'">'+s[1]+'</span> '+s[2]+'</td></tr>'}).join('')).join('')}
 /*
  * Redraws the fab-side panels, then extraRender() for KPIs and the other tabs.
  */
@@ -1097,9 +1108,9 @@ function render(){
   $('#kP').innerHTML='<span class="'+(part>10?'hot':'')+'">'+part.toFixed(1)+'</span><span class="u"> /ft³k</span>';
   $('#kU').textContent=active().length;$('#kUd').textContent=flagged+' flagged for review';
   $('#kE').textContent=events.toLocaleString();$('#kEd').textContent=(evWin.reduce((s,e)=>s+e[1],0)/2).toFixed(0)+' events/s';
-  $('#tb').innerHTML=units.slice().reverse().filter(okU).slice(0,9).map(u=>{
+  keepF($('#tb'),units.slice().reverse().filter(okU).slice(0,9).map(u=>{
     const st=u.done?(u.flag?'REVIEW':'PASS'):'PROC',tx=u.tmax>T_HI?' class="hot"':'',fx=u.fmin<F_LO?' class="hot"':'';
-    return '<tr><td class="mono">'+u.sn+'</td><td class="mono">'+u.ch+'</td><td class="mono">'+u.lot+'</td><td>'+(u.done?'Complete':STEPS[u.st])+'</td><td class="mono">'+u.tool+'</td><td'+tx+'>'+u.tmax.toFixed(1)+' °C</td><td'+fx+'>'+u.fmin.toFixed(0)+' sccm</td><td><span class="b '+st+'">'+(st==='PROC'?'IN PROCESS':st)+'</span></td></tr>'}).join('');
+    return '<tr data-u="'+u.id+'" data-fk="tb'+u.id+'" tabindex="0" class="'+trCls(u.id)+'" title="Click to select this board, right-click for trace and actions"><td class="mono">'+u.sn+'</td><td class="mono">'+u.ch+'</td><td class="mono">'+u.lot+'</td><td>'+(u.done?'Complete':STEPS[u.st])+'</td><td class="mono">'+u.tool+'</td><td'+tx+'>'+u.tmax.toFixed(1)+' °C</td><td'+fx+'>'+u.fmin.toFixed(0)+' sccm</td><td><span class="b '+st+'">'+(st==='PROC'?'IN PROCESS':st)+'</span></td></tr>'}).join(''));
   plsRender(r);
 }
 /*
@@ -1216,10 +1227,10 @@ function openPn(k,ret){const s=PNS[k];if(!s)return;if($('#ov').hidden)PNF=docume
  * reopens Trace results at the saved scroll position instead. Map nodes are re-rendered
  * while the modal is open, so a detached .scn focus target is looked up again by id.
  */
-function showM(title,stat,body,foot,sm){if(PNO){PNR=PNO;pnHome()}lastFocus=document.activeElement;$('#dt').textContent=title;$('#dst').innerHTML=stat;$('#dbd').innerHTML=body;$('#dft').innerHTML=foot;$('#dlg').className='dlg'+(sm?' sm':'');$('#ov').hidden=false;$('#dbd').scrollTop=0;$('#dx').focus()}
+function showM(title,stat,body,foot,sm){if(PNO){PNR=PNO;pnHome()}lastFocus=document.activeElement;if(lastFocus&&lastFocus.closest&&lastFocus.closest('#cm,#cm2'))lastFocus=cmFocus();$('#dt').textContent=title;$('#dst').innerHTML=stat;$('#dbd').innerHTML=body;$('#dft').innerHTML=foot;$('#dlg').className='dlg'+(sm?' sm':'');$('#ov').hidden=false;$('#dbd').scrollTop=0;$('#dx').focus()}
 function closeM(){stop3d();pnHome();if(PNR){const k=PNR;PNR=null;openPn(k);return}
   if(scBk){const k=scBk;scBk=null;if(scG&&scG.N[scSel]){scTrShow();lastFocus=k.f;$('#dbd').scrollTop=k.y;const b=[...document.querySelectorAll('#scp [data-act="scar"]')].find(q=>q.dataset.sup===k.sup);if(b)b.focus({preventScroll:true});return}}
-  $('#ov').hidden=true;if(lastFocus&&!lastFocus.isConnected&&lastFocus.classList.contains('scn'))lastFocus=scNode(lastFocus.dataset.id);if(lastFocus&&lastFocus.focus)lastFocus.focus()}
+  $('#ov').hidden=true;if(lastFocus&&!lastFocus.isConnected&&lastFocus.classList.contains('scn'))lastFocus=scNode(lastFocus.dataset.id);else if(lastFocus&&!lastFocus.isConnected)lastFocus=fkFind(lastFocus);if(lastFocus&&lastFocus.focus)lastFocus.focus()}
 $('#dx').onclick=closeM;$('#ov').onclick=e=>{if(e.target.id==='ov')closeM()};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#ov').hidden)closeM()});
 $('#ov').addEventListener('keydown',e=>{if(e.key!=='Tab')return;const f=[...$('#dlg').querySelectorAll('button,textarea')],a=f[0],z=f[f.length-1];if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}});
@@ -1245,8 +1256,10 @@ function openComp(ref){
   showM(c.ref+'  /  '+c.nm,'<span class="'+s[0]+'">'+s[1]+'</span>',body,'<button id="mp">Previous</button><button id="mn">Next</button><button id="mc">Close</button>');
   $('#mp').onclick=()=>openComp(items[(i+items.length-1)%items.length].ref);$('#mn').onclick=()=>openComp(items[(i+1)%items.length].ref);$('#mc').onclick=closeM;
 }
-$('#dtb').onclick=e=>{const tr=e.target.closest('tr.cp');if(tr)openComp(tr.dataset.r)};
-$('#dtb').onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('tr.cp')){e.preventDefault();openComp(e.target.dataset.r)}};
+function dtbSel(tr){selRef=tr.dataset.r;document.querySelectorAll('#dtb tr.cp').forEach(q=>q.classList.toggle('sel',q===tr))}
+$('#dtb').onclick=e=>{const tr=e.target.closest('tr.cp');if(tr)dtbSel(tr)};
+$('#dtb').onkeydown=e=>{const tr=e.target.closest('tr.cp');if(!tr||e.target!==tr)return;if(e.key==='Enter'||e.key===' '){e.preventDefault();dtbSel(tr)}
+  else if(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10'))cmAt(tr,e,tr.dataset.fk,(x,y)=>dtbMenu(tr,0,x,y))};
 // Splunk-style panel controls
 const IC={s:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',i:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>',d:'<svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>',r:'<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>'};
 const csv=(h,rows)=>[h].concat(rows).map(a=>Array.isArray(a)?a.map(v=>/[,"\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v).join(','):a).join('\n');
@@ -1263,14 +1276,14 @@ const tfRows=n=>TA.slice(-n).map((v,i,a)=>[new Date(TT[TT.length-a.length+i]).to
 const PN={
 'Chamber temperature':{spl:SP+'tool=CVD-* | timechart span=250ms avg(temp_c) avg(flow_sccm)',info:'Chamber zone temperature from TC-ZN2 and N\u2082 purge flow from MFC-N2-01, sampled every 250 ms. Red dashed lines mark the 224.5 \u00b0C and 455 sccm alert thresholds.',csv:()=>csv('time,temp_c,flow_sccm',tfRows(TW))},
 'Thermal vs gas flow':{spl:SP+'| eventstats corr(temp_c,flow_sccm) as r | table temp_c flow_sccm r',info:'Scatter of the last 30 seconds of samples with a regression line. A strong negative slope means temperature is following purge flow.',csv:()=>csv('time,temp_c,flow_sccm',tfRows(W))},
-'Unit traceability':{spl:'index=fab_trace sourcetype=unit:envelope | stats max(temp_c) as peak_temp min(flow_sccm) as min_flow by board chassis lot tool',info:'Each board and chassis with the peak chamber temperature and minimum flow it experienced while in process.',csv:()=>csv('board,chassis,lot,tool,status,peak_temp_c,min_flow_sccm',units.map(u=>[u.sn,u.ch,u.lot,u.tool,u.done?(u.flag?'REVIEW':'PASS'):'IN PROCESS',u.tmax.toFixed(1),u.fmin.toFixed(0)]))},
+'Unit traceability':{spl:'index=fab_trace sourcetype=unit:envelope | stats max(temp_c) as peak_temp min(flow_sccm) as min_flow by board chassis lot tool',info:'Each board and chassis with the peak chamber temperature and minimum flow it experienced while in process. Click a row to select that board; right-click it for trace results, the 3D view, hold, rework work order and SCAR.',csv:()=>csv('board,chassis,lot,tool,status,peak_temp_c,min_flow_sccm',units.map(u=>[u.sn,u.ch,u.lot,u.tool,u.done?(u.flag?'REVIEW':'PASS'):'IN PROCESS',u.tmax.toFixed(1),u.fmin.toFixed(0)]))},
 'Raw events':{spl:SP+'| head 60',info:'Latest raw events as indexed, in key=value form. The feed follows the tab it was opened from: cleanroom sensors on Yield Analytics, unit envelopes on Board Integration, genealogy links on Supply Chain Map, shipment tracking on Logistics, warehouse tasks on Warehouse Management, vehicle telematics, UWB location and vehicle Wi-Fi on AGV and MES transactions on MES Execution.',csv:()=>csv('event',[...document.querySelectorAll('#raw:not([hidden]) div,#raw2:not([hidden]) div')].map(e=>[e.textContent]))},
 'AI diagnostic stream':{spl:'index=fab_ai sourcetype=diagnostic:stream | table _time level title message',info:'Rule-based analysis of thermal and gas-flow correlation, wafer hotspots and Iddq. Each message names the probable cause and the boards exposed.',csv:()=>csv('time,title,message',[...document.querySelectorAll('#stream .ai')].map(e=>[e.querySelector('time').textContent,e.querySelector('b').textContent,e.querySelector('p').textContent]))},
 'Statistical failure hotspots':{spl:'index=fab_test sourcetype=wafer:probe | stats count as tests sum(fail) as fails by die_x die_y | eval p_hat=fails/tests',info:'Maximum-likelihood failure rate per die. Dies above 30% with at least 2 tests are shown as hotspots.',csv:()=>csv('die_x,die_y,tests,failures,p_hat',dies.map(d=>[d.gx,d.gy,d.n.toFixed(1),d.f.toFixed(1),(d.n?d.f/d.n:0).toFixed(3)]))},
 'SMT reflow':{spl:'index=fab_smt sourcetype=reflow:profile board=* | timechart span=250ms avg(zone_temp_c)',info:'Zone temperature for the board in the oven against the ideal profile. The green band is the 240 to 250 \u00b0C peak window.',csv:()=>csv('sample,zone_temp_c',reflow.map((v,i)=>[i,v.toFixed(1)]))},
 'Standby leakage':{spl:'index=fab_test sourcetype=iddq | timechart span=250ms max(iddq_ua)',info:'Standby leakage current per tested die. Bars above the 300 \u00b5A warning threshold turn red.',csv:()=>csv('sample,iddq_ua',IA.map((v,i)=>[i,v.toFixed(1)]))},
-'System integration traceability log':{spl:'index=fab_trace sourcetype=system:integration | table _time chassis_id pcba_id ecid wafer_vector status',info:'Functional test results linking each chassis and PCBA to the silicon ECID and the wafer position it came from. Click a row to open that board.',csv:()=>csv('timestamp,chassis,pcba,ecid,wafer_vector,status',logRows.map(x=>[x.ts,x.ch,x.pc,x.ec,x.vec,x.st]))},
-'Board integration drill-down':{spl:'index=fab_trace sourcetype=bom:genealogy board=* | table ref component part_number supplier lot serial status',info:'Bill of materials and genealogy for the selected board. Click a component row for measurements, placement data and event history.',csv:()=>{const u=selUnit;return csv('ref,component,part_number,supplier,lot,serial,trace,status',u?bomOf(u).flatMap(g=>g[1]).map(c=>[c.ref,c.nm,c.pn,c.sup,c.lot,c.sn,c.tr,cstat(u,c)[1]]):[])}}};
+'System integration traceability log':{spl:'index=fab_trace sourcetype=system:integration | table _time chassis_id pcba_id ecid wafer_vector status',info:'Functional test results linking each chassis and PCBA to the silicon ECID and the wafer position it came from. Click a row to select that board; right-click it for trace results and actions.',csv:()=>csv('timestamp,chassis,pcba,ecid,wafer_vector,status',logRows.map(x=>[x.ts,x.ch,x.pc,x.ec,x.vec,x.st]))},
+'Board integration drill-down':{spl:'index=fab_trace sourcetype=bom:genealogy board=* | table ref component part_number supplier lot serial status',info:'Bill of materials and genealogy for the selected board. Click a component row to select it; right-click it for component details (measurements, placement data and event history) and investigation options.',csv:()=>{const u=selUnit;return csv('ref,component,part_number,supplier,lot,serial,trace,status',u?bomOf(u).flatMap(g=>g[1]).map(c=>[c.ref,c.nm,c.pn,c.sup,c.lot,c.sn,c.tr,cstat(u,c)[1]]):[])}}};
 /*
  * attach(): adds the hover toolbar to every <section class="pn"> whose title matches a PN key. The delegated click handler below runs the four actions.
  */
@@ -1354,8 +1367,13 @@ function toolRender(){
 function suppData(){const all=BOM.flatMap(g=>g[1]);return SQ.map(a=>{const nm=SUP[a[0]],parts=all.filter(c=>SUP[c[3]]===nm),crit=parts.filter(c=>c[5]==='soc'||c[5]==='crit').length,rev=crit?failedArc.length:0,dp=a[1]+rev*9;return{i:a[0],nm,parts:parts.length,rev,dp,otd:a[2],sc:Math.max(0,Math.round(100-dp/8-(100-a[2])*2.5-rev*2))}}).sort((a,b)=>a.sc-b.sc)}
 function suppRender(){
   const k=failedArc.length+'|'+failedArc[0].id;if(k===suKey)return;suKey=k;
-  $('#sq').innerHTML=suppData().map(o=>{const c=o.sc>=90?'g':o.sc>=80?'y':'r';return '<tr data-s="'+o.nm+'"><td>'+o.nm+'</td><td>'+o.parts+'</td><td'+(o.rev?' class="hot"':'')+'>'+o.rev+'</td><td>'+o.dp+'</td><td>'+o.otd.toFixed(1)+' %</td><td><span class="bar"><i style="width:'+o.sc+'%;background:var(--'+c+')"></i></span>'+o.sc+'</td></tr>'}).join('')}
-$('#sq').onclick=e=>{const tr=e.target.closest('tr');if(!tr)return;const o=suppData().find(q=>q.nm===tr.dataset.s),parts=BOM.flatMap(g=>g[1].map(c=>[c,g[0]])).filter(q=>SUP[q[0][3]]===o.nm);
+  $('#sq').innerHTML=suppData().map(o=>{const c=o.sc>=90?'g':o.sc>=80?'y':'r';return '<tr data-s="'+o.nm+'" data-fk="sq'+o.nm+'" tabindex="0"'+(o.nm===selSup?' class="sel"':'')+'><td>'+o.nm+'</td><td>'+o.parts+'</td><td'+(o.rev?' class="hot"':'')+'>'+o.rev+'</td><td>'+o.dp+'</td><td>'+o.otd.toFixed(1)+' %</td><td><span class="bar"><i style="width:'+o.sc+'%;background:var(--'+c+')"></i></span>'+o.sc+'</td></tr>'}).join('')}
+/* Supplier rows: left-click (Enter, Space) highlights that supplier's parts in the drill-down; the scorecard dialog opens from the right-click menu. */
+function supSel(nm){selSup=selSup===nm?'':nm;document.querySelectorAll('#sq tr[data-s]').forEach(tr=>tr.classList.toggle('sel',tr.dataset.s===selSup));document.querySelectorAll('#dtb tr.cp').forEach(tr=>tr.classList.toggle('sh',!!selSup&&tr.dataset.s===selSup))}
+$('#sq').onclick=e=>{const tr=e.target.closest('tr[data-s]');if(tr)supSel(tr.dataset.s)};
+$('#sq').onkeydown=e=>{const tr=e.target.closest('tr[data-s]');if(!tr||e.target!==tr)return;if(e.key==='Enter'||e.key===' '){e.preventDefault();supSel(tr.dataset.s)}
+  else if(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10'))cmAt(tr,e,tr.dataset.fk,(x,y)=>sqMenu(tr,x,y))};
+function supScore(nm){const o=suppData().find(q=>q.nm===nm);if(!o)return;const parts=BOM.flatMap(g=>g[1].map(c=>[c,g[0]])).filter(q=>SUP[q[0][3]]===o.nm);
   showM(o.nm,'<span class="'+(o.sc>=90?'pp':o.sc>=80?'pw':'pf')+'">Score '+o.sc+'</span>',
     gridH([['Site',SITES[o.i%6]],['Certifications','ISO 9001, ISO 14001, IPC-A-610'],['DPPM',o.dp],['On-time delivery',o.otd.toFixed(1)+' %'],['Boards in review',o.rev],['Open corrective actions',o.rev?1+Math.floor(o.dp/60):0],['Last audit',mm(60*24*(20+o.i*13)).slice(0,10)],['Next audit',new Date(Date.now()+86400000*(90-o.i*7)).toISOString().slice(0,10)]])+
     '<div><h4>Parts supplied</h4><table><thead><tr><th>Ref</th><th>Component</th><th>Part number</th><th>Group</th></tr></thead><tbody>'+parts.map(q=>'<tr><td class="mono">'+q[0][0]+'</td><td>'+q[0][1]+'</td><td class="mono">'+q[0][2]+'</td><td>'+q[1]+'</td></tr>').join('')+'</tbody></table></div>'+(o.rev?'<div class="bn bad"><b>Corrective action open.</b> '+o.rev+' boards with parts from this supplier are in review. Request an 8D report and hold incoming lots for these part numbers.</div>':''),'<button id="mc">Close</button>',0);$('#mc').onclick=closeM};
@@ -1367,7 +1385,7 @@ Object.assign(PN,{
 'Process capability':{spl:'index=fab_smt sourcetype=reflow:summary | stats max(zone_temp_c) as peak by board | eval cpk=min(250-avg(peak),avg(peak)-240)/(3*stdev(peak))',info:'Individuals chart of reflow peak temperature per board. Orange lines are 3-sigma control limits from a stable baseline, red lines are the 240 and 250 \u00b0C spec limits. Cpk compares process spread with the spec window.',csv:()=>csv('board_index,peak_c',spc.map((v,i)=>[i,v.toFixed(2)]))},
 'Failure Pareto':{spl:'index=fab_test sourcetype=wafer:probe fail=1 | stats count by root_cause | sort - count',info:'Failures by classified root cause. Purge-flow and thermal failures rise during faults; the rest accrue at a low baseline.',csv:()=>csv('root_cause,count',Object.entries(par))},
 'Tool health':{spl:'index=fab_equipment sourcetype=tool:status | stats latest(status) latest(mfc_drift) latest(days_since_pm) by tool',info:'Status of each deposition tool. CVD-02 is the tool carrying the live telemetry, so its status follows the thermal and flow faults. Preventive maintenance is due at 45 days.',csv:()=>csv('tool,status,active,failures,mfc_drift,days_since_pm',tbl('#th'))},
-'Supplier quality scorecard':{spl:'index=fab_supplier sourcetype=supplier:quality | stats latest(dppm) latest(otd) by supplier | eval score=100-dppm/8-(100-otd)*2.5',info:'Score combines DPPM, on-time delivery and boards currently in review. Suppliers of reflow-sensitive parts (SoC, HBM, PMIC, board assembly) take the hit when boards are flagged.',csv:()=>csv('supplier,parts,boards_in_review,dppm,otd,score',tbl('#sq'))}});
+'Supplier quality scorecard':{spl:'index=fab_supplier sourcetype=supplier:quality | stats latest(dppm) latest(otd) by supplier | eval score=100-dppm/8-(100-otd)*2.5',info:'Score combines DPPM, on-time delivery and boards currently in review. Suppliers of reflow-sensitive parts (SoC, HBM, PMIC, board assembly) take the hit when boards are flagged. Click a supplier to highlight its parts in the drill-down; right-click it for the scorecard and quality history.',csv:()=>csv('supplier,parts,boards_in_review,dppm,otd,score',tbl('#sq'))}});
 /*
  * kpiTrend(): keeps 60 s of history per KPI, writes the change arrow and draws the smoothed sparkline.
  */
@@ -1443,14 +1461,14 @@ function open3d(){
   P.forEach((p,i)=>{p.lv=rev&&p.c.crit?(i===prim?2:1):0});
   const revN=P.filter(p=>p.lv).map(p=>sref(p.ref)+' '+p.short),why=P[0].d.why,dotc=p=>p.lv===2?'#ff4d4d':p.lv===1?'#ffb020':u.done?'#76d34a':'#5cc0d6';
   const bn=rev?'<div class="bn bad"><b>Potential problem section: compute module.</b> Primary suspect <b>'+sref(P[prim].ref)+' '+P[prim].short+'</b> after '+why+'. Also under review: '+revN.filter((x,i)=>P.filter(q=>q.lv)[i]!==P[prim]).join(', ')+'.</div>':'<div class="bn"><b>'+(u.done?'No problem detected.':'In process.')+'</b> '+(u.done?'Every component on this board passed.':'Findings appear after final test.')+'</div>';
-  const body='<div class="v3"><div class="cv3" id="cv3"><canvas id="c3" tabindex="0" aria-label="3D exploded view. Use arrow keys to rotate and plus or minus to zoom."></canvas><div class="hint3">Drag to orbit, scroll to zoom, hover a part for details, click to pin it</div><div class="ctl3"><label>Explode <input type="range" id="ex3" min="0" max="100" value="0" aria-label="Explode amount"></label><button id="b3a">Assemble</button><button id="b3r">Auto-rotate: on</button><button id="b3f">Focus problem</button><button id="b3v">Reset view</button><button id="b3l">Labels: on</button><button id="b3s" title="Capture this view and send it to a person on Webex">Snapshot to Webex</button></div><div class="tip3" id="tip3" hidden></div>'+
+  const body='<div class="v3"><div class="cv3" id="cv3"><canvas id="c3" tabindex="0" aria-label="3D exploded view. Use arrow keys to rotate and plus or minus to zoom."></canvas><div class="hint3">Drag to orbit, scroll to zoom, hover a part for details, click to pin it, right-click for investigation options</div><div class="ctl3"><label>Explode <input type="range" id="ex3" min="0" max="100" value="0" aria-label="Explode amount"></label><button id="b3a">Assemble</button><button id="b3r">Auto-rotate: on</button><button id="b3f">Focus problem</button><button id="b3v">Reset view</button><button id="b3l">Labels: on</button><button id="b3s" title="Capture this view and send it to a person on Webex">Snapshot to Webex</button></div><div class="tip3" id="tip3" hidden></div>'+
     '<div class="ss3" id="ss3" hidden role="dialog" aria-label="Send snapshot to Webex"><h5>Send snapshot to Webex<button id="ss3x" aria-label="Close snapshot panel">\u2715</button></h5><div class="wxsp" id="ss3sp" hidden></div><img id="ss3i" alt="Snapshot of the 3D view">'+
     '<label for="ss3to">To (Webex email)</label><input id="ss3to" type="email" autocomplete="off" spellcheck="false" placeholder="name@company.com">'+
     '<label for="ss3tk">Bot access token</label><div class="row"><input id="ss3tk" type="password" autocomplete="off" spellcheck="false"><button type="button" id="ss3tkx">Forget</button></div>'+
     '<label for="ss3tx">Message</label><textarea id="ss3tx"></textarea>'+
     '<div class="sub">The token stays in memory for this session only and goes only to the local relay and webexapis.com.</div><div id="ss3m" role="status"></div>'+
     '<div class="row"><button id="ss3go" class="go">Send to Webex</button><button id="ss3dl">Download PNG</button><button id="ss3r">Retake</button></div></div></div>'+
-    '<div class="sd3">'+bn+'<h4>Components</h4><div id="ls3">'+P.map((p,i)=>'<button class="it" data-i="'+i+'"><span class="dot3" style="background:'+dotc(p)+'"></span><span class="mono">'+sref(p.ref)+'</span>&nbsp;'+p.short+'</button>').join('')+'</div><h4>Selected</h4><div id="se3" class="sub">Click a part to pin its details here.</div></div></div>';
+    '<div class="sd3">'+bn+'<h4>Components</h4><div id="ls3">'+P.map((p,i)=>'<button class="it" data-i="'+i+'"><span class="dot3" style="background:'+dotc(p)+'"></span><span class="mono">'+sref(p.ref)+'</span>&nbsp;'+p.short+'</button>').join('')+'</div><h4>Selected</h4><div id="se3" class="sub">Click a part to pin its details here, right-click it for investigation options.</div></div></div>';
   showM(chs+'  /  exploded view  /  '+u.sn,upill(u),body,'<button id="mc">Close</button>');$('#dlg').className='dlg xl';$('#mc').onclick=closeM;
   const cv=$('#c3'),ctx=cv.getContext('2d'),box=$('#cv3'),tip=$('#tip3'),rm=matchMedia('(prefers-reduced-motion: reduce)').matches,EXU=24;
   const S={yaw:-.6,pit:.52,dist:250,tx:0,ty:20,tz:0,gx:0,gy:20,gz:0,gd:250,e:rm?.85:0,eT:.85,auto:!rm,labels:true,hov:-1,sel:-1,drag:false,mx:0,my:0,faces:[],lr:[]};
@@ -1463,9 +1481,9 @@ function open3d(){
   const tr2=[];{const q=rng(u.id);for(let k=0;k<26;k++){let a=q(),b=q();const pts=[[a,b]];for(let m=0;m<3;m++){if(m%2===0)a=q();else b=q();pts.push([a,b])}tr2.push(pts)}}
   const anc=(p,ex)=>{const a=p.ap||[p.boxes[p.anchor].c[0],p.boxes[p.anchor].c[1]+p.boxes[p.anchor].s[1]/2,p.boxes[p.anchor].c[2],p.boxes[p.anchor].lvl];return[a[0],a[1]+ex*EXU*a[3],a[2]]};
   const rowH=(k,v)=>'<div class="r"><span>'+k+'</span><b>'+v+'</b></div>';
-  const tipH=i=>{const p=P[i],c=p.c,d=p.d,s=p.s,t=d.tests[0],t2=d.tests[1];return '<div class="h"><b>'+sref(p.ref)+'  '+c.nm+'</b><span class="'+s[0]+'">'+s[1]+'</span></div>'+rowH('Part number',c.pn)+rowH('Supplier',c.sup+', '+d.site)+rowH('Lot / date code',c.lot)+rowH('Serial or ECID',c.sn)+rowH('Quantity on board',d.qty)+(t?rowH(t.n,t.v):'')+(t2?rowH(t2.n,t2.v):'')+rowH('Thermal exposure',u.tmax>-1e8?u.tmax.toFixed(1)+' \u00b0C chamber peak':'pending')+(p.lv?'<div style="margin-top:6px;color:'+(p.lv===2?'#ff8a80':'#ffcf70')+'">'+(p.lv===2?'Primary suspect: ':'Under review: ')+why+'</div>':'')+'<div style="margin-top:6px;color:#6f8393">Click to pin details</div>'};
+  const tipH=i=>{const p=P[i],c=p.c,d=p.d,s=p.s,t=d.tests[0],t2=d.tests[1];return '<div class="h"><b>'+sref(p.ref)+'  '+c.nm+'</b><span class="'+s[0]+'">'+s[1]+'</span></div>'+rowH('Part number',c.pn)+rowH('Supplier',c.sup+', '+d.site)+rowH('Lot / date code',c.lot)+rowH('Serial or ECID',c.sn)+rowH('Quantity on board',d.qty)+(t?rowH(t.n,t.v):'')+(t2?rowH(t2.n,t2.v):'')+rowH('Thermal exposure',u.tmax>-1e8?u.tmax.toFixed(1)+' \u00b0C chamber peak':'pending')+(p.lv?'<div style="margin-top:6px;color:'+(p.lv===2?'#ff8a80':'#ffcf70')+'">'+(p.lv===2?'Primary suspect: ':'Under review: ')+why+'</div>':'')+'<div style="margin-top:6px;color:#6f8393">Click to pin details, right-click for investigation options</div>'};
   const selH=i=>{const p=P[i],c=p.c,d=p.d;return gridH([['Component',c.nm],['Part number',c.pn],['Supplier',c.sup+', '+d.site],['Lot / date code',c.lot],['Serial or ECID',c.sn],['Quantity',d.qty]])+(d.tests.length?'<table style="margin-top:6px"><tbody>'+d.tests.map(t=>'<tr><td>'+t.n+'</td><td class="mono">'+t.v+'</td><td><span class="'+(t.f?'pf':u.done?'pp':'pi')+'">'+(t.f?'Fail':u.done?'Pass':'Pending')+'</span></td></tr>').join('')+'</tbody></table>':'')+'<button id="se3o" style="margin-top:8px">Open full component detail</button>'};
-  const setSel=i=>{S.sel=i;const el=$('#se3');if(i<0){el.className='sub';el.textContent='Click a part to pin its details here.';return}el.className='';el.innerHTML=selH(i);$('#se3o').onclick=()=>{const ref=P[i].ref;stop3d();openComp(ref)}};
+  const setSel=i=>{S.sel=i;const el=$('#se3');if(i<0){el.className='sub';el.textContent='Click a part to pin its details here, right-click it for investigation options.';return}el.className='';el.innerHTML=selH(i);$('#se3o').onclick=()=>{const ref=P[i].ref;stop3d();openComp(ref)}};
   const pip=(x,y,pts)=>{let c=false;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b=pts[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])c=!c}return c};
   const pick=(x,y)=>{for(const r of S.lr)if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)return r.pi;for(let k=S.faces.length-1;k>=0;k--)if(pip(x,y,S.faces[k].pts))return S.faces[k].pi;return -1};
   const showTip=()=>{if(S.hov<0||S.drag){tip.hidden=true;return}tip.innerHTML=tipH(S.hov);tip.hidden=false;const W=box.clientWidth,H=box.clientHeight;tip.style.left=Math.max(6,Math.min(S.mx+16,W-280))+'px';tip.style.top=Math.max(6,Math.min(S.my+16,H-tip.offsetHeight-60))+'px'};
@@ -1513,13 +1531,19 @@ function open3d(){
   }
   const loop=now=>{if(!G3||G3.dead)return;G3.raf=requestAnimationFrame(loop);draw(now)};loop(performance.now());
   const rel=e=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};let dn=null;
-  cv.addEventListener('pointerdown',e=>{S.drag=true;dn=rel(e);S.lx=dn[0];S.ly=dn[1];S.auto=false;$('#b3r').textContent='Auto-rotate: off';cv.setPointerCapture(e.pointerId);tip.hidden=true});
+  cv.addEventListener('pointerdown',e=>{if(e.button!==0)return;S.drag=true;dn=rel(e);S.lx=dn[0];S.ly=dn[1];S.auto=false;$('#b3r').textContent='Auto-rotate: off';cv.setPointerCapture(e.pointerId);tip.hidden=true});
   cv.addEventListener('pointermove',e=>{const m=rel(e);S.mx=m[0];S.my=m[1];if(S.drag){S.yaw-=(m[0]-S.lx)*.008;S.pit=Math.max(.1,Math.min(1.45,S.pit+(m[1]-S.ly)*.006));S.lx=m[0];S.ly=m[1];return}S.hov=pick(m[0],m[1]);cv.style.cursor=S.hov>=0?'pointer':'grab';showTip()});
-  cv.addEventListener('pointerup',e=>{const m=rel(e);S.drag=false;if(dn&&Math.hypot(m[0]-dn[0],m[1]-dn[1])<4){const i=pick(m[0],m[1]);setSel(i===S.sel?-1:i)}});
+  cv.addEventListener('pointerup',e=>{if(e.button!==0)return;const m=rel(e);S.drag=false;if(dn&&Math.hypot(m[0]-dn[0],m[1]-dn[1])<4){const i=pick(m[0],m[1]);setSel(i===S.sel?-1:i)}dn=null});
+  const m3Menu=(i,x,y)=>{if(!P[i]||!P[i].c)return;setSel(i);tip.hidden=true;const c=P[i].c;cmC={ref:c.ref,nm:c.sup};
+    cmShow(x,y,esc(sref(c.ref)+'  '+c.nm),cmComp(c).filter(it=>it[0]!=='c3d').concat(['-',['#','Test results'],['tdet','Test result details'],['tai','Launch AI analyst']]))};
+  cv.addEventListener('contextmenu',e=>{const m=rel(e),i=pick(m[0],m[1]);e.preventDefault();if(i>=0)cmAt(cv,e,'3d'+i,(x,y)=>m3Menu(i,x,y))});
   cv.addEventListener('pointerleave',()=>{if(!S.drag){S.hov=-1;tip.hidden=true}});
   cv.addEventListener('wheel',e=>{e.preventDefault();S.gd=Math.max(100,Math.min(600,S.gd*(1+Math.sign(e.deltaY)*.08)))},{passive:false});
-  cv.addEventListener('keydown',e=>{const k=e.key;if(k==='ArrowLeft')S.yaw+=.1;else if(k==='ArrowRight')S.yaw-=.1;else if(k==='ArrowUp')S.pit=Math.min(1.45,S.pit+.06);else if(k==='ArrowDown')S.pit=Math.max(.1,S.pit-.06);else if(k==='+'||k==='=')S.gd=Math.max(100,S.gd*.9);else if(k==='-')S.gd=Math.min(600,S.gd*1.1);else return;S.auto=false;e.preventDefault()});
+  cv.addEventListener('keydown',e=>{const k=e.key;if(k==='ArrowLeft')S.yaw+=.1;else if(k==='ArrowRight')S.yaw-=.1;else if(k==='ArrowUp')S.pit=Math.min(1.45,S.pit+.06);else if(k==='ArrowDown')S.pit=Math.max(.1,S.pit-.06);else if(k==='+'||k==='=')S.gd=Math.max(100,S.gd*.9);else if(k==='-')S.gd=Math.min(600,S.gd*1.1);
+    else if(k==='ContextMenu'||(e.shiftKey&&k==='F10')){const i=S.sel>=0?S.sel:S.hov;e.preventDefault();if(i>=0)cmAt(cv,e,'3d'+i,(x,y)=>m3Menu(i,x,y));return}else return;S.auto=false;e.preventDefault()});
   const ls=$('#ls3');ls.addEventListener('mouseover',e=>{const b=e.target.closest('.it');S.hov=b?+b.dataset.i:-1});ls.addEventListener('mouseleave',()=>{S.hov=-1});ls.addEventListener('click',e=>{const b=e.target.closest('.it');if(b){const i=+b.dataset.i;setSel(i===S.sel?-1:i)}});
+  ls.addEventListener('contextmenu',e=>{const b=e.target.closest('.it');if(b)cmAt(b,e,'3d'+b.dataset.i,(x,y)=>m3Menu(+b.dataset.i,x,y))});
+  ls.addEventListener('keydown',e=>{const b=e.target.closest('.it');if(b&&(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10')))cmAt(b,e,'3d'+b.dataset.i,(x,y)=>m3Menu(+b.dataset.i,x,y))});
   $('#ex3').oninput=e=>{S.eT=e.target.value/100;$('#b3a').textContent=S.eT>.3?'Assemble':'Explode'};
   $('#b3a').onclick=()=>{S.eT=S.eT>.3?0:.85;$('#ex3').value=S.eT*100;$('#b3a').textContent=S.eT>.3?'Assemble':'Explode'};
   $('#b3r').onclick=e=>{S.auto=!S.auto;e.target.textContent='Auto-rotate: '+(S.auto?'on':'off')};
@@ -1560,11 +1584,19 @@ function open3d(){
     const dst=wxDest(res.space,r);sm.className='ok';sm.textContent='Sent to '+dst+' at '+hms()+' UTC.'+(res.id?' Message ID '+res.id:'');wxLog(res.id,dst,'3D snapshot '+chs+' / '+u.sn);toast('3D snapshot sent to '+(res.space?'space '+res.space:r)+' on Webex')};
   window.__S3=S;
 }
-$('#dsum').addEventListener('click',e=>{if(e.target.closest('[data-3d]'))open3d()});
-$('#dsum').addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button===0&&e.target.closest('[data-3d]'))open3d()});
+/*
+ * Chassis system ID in the board summary: left-click toggles a highlight of this chassis in the log and unit lists;
+ * the 3D exploded view and board actions are in its right-click menu (trMenu). The summary re-renders while a board is
+ * in process, which can swallow the click, so a mouse release toggles it and the click event only covers keyboard and touch.
+ */
+let chT=0;const chTog=()=>{if(!selUnit)return;chHl=chHl==selUnit.id?'':selUnit.id;drillRender();trHlSync()};
+$('#dsum').addEventListener('click',e=>{if(e.target.closest('[data-3d]')&&Date.now()-chT>400)chTog()});
+$('#dsum').addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button===0&&e.target.closest('[data-3d]')){chT=Date.now();chTog()}});
+$('#dsum').addEventListener('contextmenu',e=>{const b=e.target.closest('[data-3d]');if(b&&selUnit)cmAt(b,e,'ch'+selUnit.id,(x,y)=>trMenu(selUnit,x,y))});
+$('#dsum').addEventListener('keydown',e=>{const b=e.target.closest('[data-3d]');if(b&&selUnit&&(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10')))cmAt(b,e,'ch'+selUnit.id,(x,y)=>trMenu(selUnit,x,y))});
 
 // ===== Right-click investigation menu
-let pre3='',cmC=null,cmT=0;
+let pre3='',cmC=null,cmT=0,cmF=null,cmK='';
 const hsh=q=>{let h=2166136261;for(const ch of String(q))h=Math.imul(h^ch.charCodeAt(0),16777619);return h>>>0};
 const hx4=(rg,n)=>Array.from({length:n},()=>'0123456789ABCDEF'[Math.floor(rg()*16)]).join('');
 const pl=(k,t)=>'<span class="'+k+'">'+t+'</span>';
@@ -1663,10 +1695,20 @@ function hSupPO(nm,u){
  */
 function cmShow(x,y,title,items){
   cm2Hide();const m=$('#cm');m.classList.remove('cmn');const sb=$('#aisb');if(sb)sb.setAttribute('aria-expanded','false');m.innerHTML='<div class="cmh">'+title+'</div>'+items.map(it=>it==='-'?'<div class="cms" role="separator"></div>':it[0]==='#'?'<div class="cmg">'+it[1]+'</div>':'<button role="menuitem" data-k="'+it[0]+'"><span>'+it[1]+'</span>'+(it[2]?'<i>'+it[2]+'</i>':'')+'</button>').join('');
-  cmT=Date.now();m.hidden=false;m.style.left='0px';m.style.top='0px';m.style.left=Math.max(4,Math.min(x,innerWidth-m.offsetWidth-6))+'px';m.style.top=Math.max(4,Math.min(y,innerHeight-m.offsetHeight-6))+'px';m.querySelector('button').focus()}
+  cmF=document.activeElement&&!document.activeElement.closest('#cm,#cm2')?document.activeElement:cmF;cmT=Date.now();m.hidden=false;m.style.left='0px';m.style.top='0px';m.style.left=Math.max(4,Math.min(x,innerWidth-m.offsetWidth-6))+'px';m.style.top=Math.max(4,Math.min(y,innerHeight-m.offsetHeight-6))+'px';m.querySelector('button').focus()}
+/*
+ * Opening the menu from a row or hotspot: cmAt() places it at the pointer, or under the element for the context-menu
+ * key and Shift+F10, and ignores the second event when both the key and the contextmenu event fire. cmFocus() returns
+ * the element the menu was opened from, found again by data-fk if a re-render replaced it.
+ */
+function cmAt(el,e,key,fn){e.preventDefault();if(!$('#cm').hidden&&cmK===key&&Date.now()-cmT<300)return;cmK=key;
+  if(e.type==='contextmenu'&&(e.button===2||e.clientX||e.clientY))fn(e.clientX,e.clientY);else{const r=el.getBoundingClientRect();fn(r.left+20,r.bottom-4)}}
+function fkFind(el){return el&&el.dataset&&el.dataset.fk&&document.querySelector('[data-fk="'+CSS.escape(el.dataset.fk)+'"]')||el}
+function cmFocus(){if(cmF&&!cmF.isConnected)cmF=fkFind(cmF);return cmF}
 function cmHide(){cm2Hide();$('#cm').hidden=true;const sb=$('#aisb');if(sb)sb.setAttribute('aria-expanded','false')}
 function cpy(txt){let ok=false;try{if(navigator.clipboard){navigator.clipboard.writeText(txt);ok=true}}catch(e){}if(!ok){const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();try{ok=document.execCommand('copy')}catch(e){}t.remove()}return ok}
 function cmAct(k){
+  if(G3&&$('#c3')){if(k==='clog')closeM();else if(!/^(cp1|cp2|cp3|scp)$/.test(k))stop3d()}
   const u=selUnit,c=cmC.ref&&bomOf(u).flatMap(g=>g[1]).find(q=>q.ref===cmC.ref),nm=cmC.nm,tt=c?sref(c.ref)+'  '+c.nm:nm;
   switch(k){
     case 'cdet':openComp(c.ref);break;
@@ -1679,7 +1721,7 @@ function cmAct(k){
     case 'clog':{const f='PCB-SUP-'+u.id+'A';filt=f;$('#q').value=f;logRender();$('#lg').closest('section').scrollIntoView({block:'nearest',behavior:'smooth'});break}
     case 'cp1':cpy(c.pn);break;
     case 'cp2':cpy(c.sn);break;
-    case 'sscore':{const t=[...document.querySelectorAll('#sq tr')].find(r2=>r2.dataset.s===nm);if(t)t.dispatchEvent(new MouseEvent('click',{bubbles:true}));break}
+    case 'sscore':supScore(nm);break;
     case 'shist':invShow(nm+' / quality history',pl('pi','Supplier'),hSupQ(nm));break;
     case 'slots':invShow(nm+' / lots received',pl('pi','Incoming'),hSupLots(nm));break;
     case 's8d':invShow(nm+' / corrective actions',pl('pi','8D'),hSup8d(nm));break;
@@ -1702,14 +1744,14 @@ function cmAct(k){
 const cmTest=c=>[['tdet','Test result details'],'-',['#','Investigate'],['tcmp','Compare with the board population'],['tcor','Correlate with process data'],['tret','Retest history and repeatability'],['teq','Test equipment and conditions'],['chist','Measurement history by lot'],'-',['#','AI analyst'],['tai','Launch AI analyst'],['tgen','Create work order and action report (AI)'],'-',['cp3','Copy test results']],
   cmComp=c=>[['cdet','Component details'],'-',['chist','Measurement history','12 weeks'],['clot','Lot genealogy and affected boards'],['cuse','Where else this part is used'],['cfail','Failure and 8D history'],'-',['#','Orders, batches and MES'],['cpo','Purchase order and contract'],['cbatch','Batch, lot and receiving numbers'],['cmes','MES work order and routing'],'-',['c3d','Show in 3D exploded view'],['csup','Investigate supplier',c.sup],['clog','Show this board in the traceability log'],'-',['cp1','Copy part number',c.pn],['cp2','Copy serial or ECID']],
   cmSup=nm=>[['sscore','Supplier scorecard'],'-',['shist','Quality history','DPPM and delivery'],['slots','Lots received and inspection'],['s8d','Corrective actions (8D)'],['sparts','Parts from this supplier on this board'],'-',['#','Orders'],['spo','Purchase orders and contract'],'-',['scp','Copy supplier name']];
-$('#dtb').addEventListener('contextmenu',e=>{
-  const tr=e.target.closest('tr.cp');if(!tr||!selUnit)return;e.preventDefault();
-  const td=e.target.closest('td'),idx=td?[...tr.children].indexOf(td):0,c=bomOf(selUnit).flatMap(g=>g[1]).find(q=>q.ref===tr.dataset.r);
-  selRef=c.ref;document.querySelectorAll('#dtb tr.cp').forEach(q=>q.classList.toggle('sel',q===tr));
-  if(idx===7){cmC={ref:c.ref,nm:c.sup};cmShow(e.clientX,e.clientY,esc('Test results: '+sref(c.ref)+'  '+c.nm),cmTest(c))}
-  else if(idx===3){cmC={nm:c.sup,ref:c.ref};cmShow(e.clientX,e.clientY,esc(c.sup)+' (supplier)',cmSup(c.sup))}
-  else{cmC={ref:c.ref,nm:c.sup};cmShow(e.clientX,e.clientY,esc(sref(c.ref)+'  '+c.nm),cmComp(c))}});
-$('#sq').addEventListener('contextmenu',e=>{const tr=e.target.closest('tr[data-s]');if(!tr||!selUnit)return;e.preventDefault();cmC={nm:tr.dataset.s};cmShow(e.clientX,e.clientY,esc(tr.dataset.s)+' (supplier)',cmSup(tr.dataset.s).filter(it=>it[0]!=='sscore'))});
+/* Drill-down row menu: the test result column opens the test menu, the supplier column the supplier menu, any other cell the component menu. */
+function dtbMenu(tr,idx,x,y){const c=selUnit&&bomOf(selUnit).flatMap(g=>g[1]).find(q=>q.ref===tr.dataset.r);if(!c)return;dtbSel(tr);
+  if(idx===7){cmC={ref:c.ref,nm:c.sup};cmShow(x,y,esc('Test results: '+sref(c.ref)+'  '+c.nm),cmTest(c))}
+  else if(idx===3){cmC={nm:c.sup,ref:c.ref};cmShow(x,y,esc(c.sup)+' (supplier)',cmSup(c.sup))}
+  else{cmC={ref:c.ref,nm:c.sup};cmShow(x,y,esc(sref(c.ref)+'  '+c.nm),cmComp(c))}}
+function sqMenu(tr,x,y){if(!selUnit)return;cmC={nm:tr.dataset.s};cmShow(x,y,esc(tr.dataset.s)+' (supplier)',cmSup(tr.dataset.s))}
+$('#dtb').addEventListener('contextmenu',e=>{const tr=e.target.closest('tr.cp');if(!tr||!selUnit)return;const td=e.target.closest('td'),idx=td?[...tr.children].indexOf(td):0;cmAt(tr,e,tr.dataset.fk+idx,(x,y)=>dtbMenu(tr,idx,x,y))});
+$('#sq').addEventListener('contextmenu',e=>{const tr=e.target.closest('tr[data-s]');if(tr&&selUnit)cmAt(tr,e,tr.dataset.fk,(x,y)=>sqMenu(tr,x,y))});
 $('#stream').addEventListener('click',e=>{const b=e.target.closest('.ab'),el=e.target.closest('.ai');if(!el)return;if(b){if(b.dataset.a==='pin')aiPin(el);else aiNotify(el);return}if(e.target.closest('.h')&&!getSelection().toString())aiCol(el)});
 $('#stream').addEventListener('contextmenu',e=>{const el=e.target.closest('.ai');e.preventDefault();if(el)aiMenu(el,e.clientX,e.clientY);else aiBgMenu(e.clientX,e.clientY)});
 $('#aigc').onclick=()=>aiGrpSet('');
@@ -1733,10 +1775,11 @@ $('#aitf').onchange=e=>{AIM.tf=e.target.value;aiSort()};$('#aitt').onchange=e=>{
 $('#aiclr').onclick=aiReset;
 setInterval(()=>{if(AIM.tw!=='0'&&AIM.tw!=='c'||AIM.grp==='age')aiSort()},5000);
 $('#aiunp').onclick=()=>[...$('#aipin').children].forEach(el=>aiPin(el,false));
-$('#cm').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;if(k==='g:sub'){if($('#cm2').hidden)cm2Show(b);else cm2Hide(true);return}cmHide();if(k==='g:wx'){wxLogShow();return}if(k==='g:clr'){aiReset();return}if(k==='g:cola'||k==='g:expa'){aiColAll(k==='g:cola');return}if(k.indexOf('a:')===0)aiAct(k);else if(k.indexOf('sc:')===0)scMenuAct(k.slice(3));else if(k.indexOf('m:')===0)mesAct(k);else if(k.indexOf('w:')===0)wmAct(k);else if(k.indexOf('s:')===0){const e=$('#aisort');e.value=k.slice(2);e.dispatchEvent(new Event('change'));$('#aisb').focus()}else cmAct(k)});
+$('#cm').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;if(k==='g:sub'){if($('#cm2').hidden)cm2Show(b);else cm2Hide(true);return}cmHide();if(k==='g:wx'){wxLogShow();return}if(k==='g:clr'){aiReset();return}if(k==='g:cola'||k==='g:expa'){aiColAll(k==='g:cola');return}if(k.indexOf('a:')===0)aiAct(k);else if(k.indexOf('sc:')===0)scMenuAct(k.slice(3));else if(k.indexOf('t:')===0)trAct(k.slice(2));else if(k.indexOf('m:')===0)mesAct(k);else if(k.indexOf('w:')===0)wmAct(k);else if(k.indexOf('s:')===0){const e=$('#aisort');e.value=k.slice(2);e.dispatchEvent(new Event('change'));$('#aisb').focus()}else cmAct(k)});
 $('#cm2').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;cmHide();aiGrpSet(b.dataset.g)});
 $('#cm2').addEventListener('keydown',e=>{const bs=[...$('#cm2').querySelectorAll('button')],i=bs.indexOf(document.activeElement);if(e.key==='ArrowDown'){e.preventDefault();bs[(i+1)%bs.length].focus()}else if(e.key==='ArrowUp'){e.preventDefault();bs[(i+bs.length-1)%bs.length].focus()}else if(e.key==='ArrowLeft'||e.key==='Escape'){e.preventDefault();e.stopPropagation();cm2Hide(true)}else if(e.key==='Tab')cmHide()});
-$('#cm').addEventListener('keydown',e=>{const bs=[...$('#cm').querySelectorAll('button')],i=bs.indexOf(document.activeElement);if(e.key==='ArrowRight'&&document.activeElement.dataset.k==='g:sub'){e.preventDefault();cm2Show(document.activeElement);return}if(e.key==='ArrowDown'){e.preventDefault();bs[(i+1)%bs.length].focus()}else if(e.key==='ArrowUp'){e.preventDefault();bs[(i+bs.length-1)%bs.length].focus()}else if(e.key==='Escape'||e.key==='Tab'){cmHide()}});
+$('#cm').addEventListener('keydown',e=>{const bs=[...$('#cm').querySelectorAll('button')],i=bs.indexOf(document.activeElement);if(e.key==='ArrowRight'&&document.activeElement.dataset.k==='g:sub'){e.preventDefault();cm2Show(document.activeElement);return}if(e.key==='ArrowDown'){e.preventDefault();bs[(i+1)%bs.length].focus()}else if(e.key==='ArrowUp'){e.preventDefault();bs[(i+bs.length-1)%bs.length].focus()}else if(e.key==='Escape'){e.stopPropagation();cmHide();const f=cmFocus();if(f&&f.isConnected&&f.focus)f.focus({preventScroll:true})}else if(e.key==='Tab'){cmHide()}});
+$('#cm').addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('click',e=>{if(!e.target.closest('#cm,#cm2'))cmHide()});document.addEventListener('scroll',()=>{if(Date.now()-cmT>250)cmHide()},true);addEventListener('resize',cmHide);
 
 // ===== Test result investigation and AI analyst
@@ -2248,7 +2291,7 @@ function scTrBody(G){const sel=G.N[scSel],st=STP[sel.st],b=$('#dbd'),y=b.scrollT
 function scTr(G){if(!scTrOpen())return;if(scSel&&G.N[scSel])scTrBody(G);else closeM()}
 function scTrShow(){const G=scG;if(!G||!scSel||!G.N[scSel])return;
   if(!scTrOpen()){showM('','','<div id="scp"></div>','<div class="seg" id="scmode2" role="group" aria-label="Trace direction" style="margin-right:auto">'+[['fwd','Forward: blast radius'],['bwd','Backward: supplier'],['both','Both']].map(m=>'<button data-m="'+m[0]+'">'+m[1]+'</button>').join('')+'</div><button id="scClr">Clear selection</button><button id="mc">Close</button>');
-    $('#mc').onclick=closeM;$('#scClr').onclick=()=>{scSel='';scSig='';closeM();scRender(false)};$('#scmode2').onclick=e=>{const q=e.target.closest('button');if(q){scMode=q.dataset.m;scSig='';scRender(false)}};lastFocus=scNode(scSel)}
+    $('#mc').onclick=closeM;$('#scClr').onclick=()=>{scSel='';scSig='';closeM();scRender(false)};$('#scmode2').onclick=e=>{const q=e.target.closest('button');if(q){scMode=q.dataset.m;scSig='';scRender(false)}};lastFocus=(!$('#m-map').classList.contains('off')&&scNode(scSel))||lastFocus}
   scTrBody(G)}
 function scNode(id){return[...document.querySelectorAll('#scm .scn')].find(z=>z.dataset.id===id)||null}
 function scPick(id,show){scSel=id||'';scSig='';scRender(false);if(scSel&&show)scTrShow();else if(!scSel&&scTrOpen())closeM()}
@@ -2341,6 +2384,39 @@ $('#dbd').addEventListener('click',e=>{const b=e.target.closest('#scp [data-act]
   else if(a==='hold')scHoldAct()
   else if(a==='rwo')scRwoAct()
   else if(a==='scar')scarOpen(b.dataset.sup)});
+/*
+ * Board menu for the Board Integration lists (traceability log, unit traceability, chassis ID): select the board, the 3D
+ * exploded view, the log, and the supply chain map's Trace results and actions. scEnsure() adds the board to the map
+ * graph (scReal) so the map's own handlers (scMenuAct with 'sc:' keys, scarOpen, scRwoAct) work on it unchanged.
+ */
+const trUnit=id=>units.concat(failedArc).find(q=>q.id==id);
+function trHlSync(){document.querySelectorAll('#tb tr[data-u],#lg tr[data-u]').forEach(tr=>{tr.className=trCls(tr.dataset.u)})}
+function trPickUnit(u,scroll){if(!u)return;selUnit=u;oKey='';drillRender();trHlSync();if(scroll)$('#drill').scrollIntoView({block:'nearest',behavior:'smooth'})}
+function scEnsure(u){if(!scReal)scRender(true);if(!scReal.includes(u))scReal=[u].concat(scReal.filter(q=>q!==u).slice(0,9));scT=Date.now();scSig='';scRender(false);return scG&&scG.N['B:'+u.sn]?'B:'+u.sn:''}
+function trMenu(u,x,y){const bid=scEnsure(u),G=scG,n=bid&&G.N[bid],chs='SYS-'+u.ch.replace('CHS-','CH-')+'A-B';trM={id:u.id};
+  const it=[['#','Board'],['t:open',selUnit===u?'Board drill-down':'Open board drill-down',esc(u.sn)],['t:3d','Show in 3D exploded view',esc(chs)],['t:log','Show in traceability log'],['t:hl',chHl==u.id?'Clear chassis highlight':'Highlight chassis in lists']];
+  if(n){const c=scCtx(G,bid),risky=n.st==='fail'||c.boards.some(b=>b.st==='fail'),sups=c.sups.filter(s=>scBad(c,s).length).map(s=>s.label),nb=c.boards.length,ns=c.sups.length,fin=c.fin.filter(b=>b.st!=='fail').length,act=[];
+    scM={id:bid,sups:sups};
+    if(!u.done&&!scHold.has(bid))act.push(['t:hold','Hold this board',esc(u.sn)]);
+    if(risky&&!scWO.has(bid))act.push(['sc:rwo','Create rework work order',fin?fin+' finished':'']);
+    sups.forEach((s,i)=>act.push(['sc:scar:'+i,'Generate SCAR with data backup',esc(s)]));
+    it.push('-',['#','Trace results'],['sc:tr:fwd','Forward: blast radius',nb+' board'+(nb===1?'':'s')],['sc:tr:bwd','Backward: supplier',ns+' supplier'+(ns===1?'':'s')],['sc:tr:both','Both directions'],['t:map','Trace on supply chain map']);
+    if(act.length)it.push('-',['#','Actions'],...act)}
+  it.push('-',['t:cps','Copy board serial',esc(u.sn)],['t:cpc','Copy chassis ID',esc(chs)]);
+  cmShow(x,y,esc(u.sn+' (system board)'),it)}
+function trAct(k){const u=trM&&trUnit(trM.id);if(!u)return;const bid='B:'+u.sn;
+  if(k==='open')trPickUnit(u,true);
+  else if(k==='3d'){trPickUnit(u);open3d()}
+  else if(k==='log'){trPickUnit(u);filt='PCB-SUP-'+u.id+'A';$('#q').value=filt;logRender();$('#lg').closest('section').scrollIntoView({block:'nearest',behavior:'smooth'})}
+  else if(k==='hl'){chHl=chHl==u.id?'':u.id;drillRender();trHlSync()}
+  else if(k==='map'){showTab('map');if(scEnsure(u))scPick(bid)}
+  else if(k==='hold'){scHold.add(bid);scSig='';scAlert('warn','Hold placed on in-process board '+u.sn)}
+  else if(k==='cps'||k==='cpc'){const t=k==='cps'?u.sn:'SYS-'+u.ch.replace('CHS-','CH-')+'A-B';toast(cpy(t)?'Copied '+t:'Copy was blocked in this view.')}}
+['#tb','#lg'].forEach(q=>{const el=$(q);
+  el.addEventListener('click',e=>{const tr=e.target.closest('tr[data-u]');if(tr)trPickUnit(trUnit(tr.dataset.u))});
+  el.addEventListener('contextmenu',e=>{const tr=e.target.closest('tr[data-u]'),u=tr&&trUnit(tr.dataset.u);if(u)cmAt(tr,e,tr.dataset.fk,(x,y)=>trMenu(u,x,y))});
+  el.addEventListener('keydown',e=>{const tr=e.target.closest('tr[data-u]'),u=tr&&e.target===tr&&trUnit(tr.dataset.u);if(!u)return;
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();trPickUnit(u)}else if(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10'))cmAt(tr,e,tr.dataset.fk,(x,y)=>trMenu(u,x,y))})});
 
 // ===== Logistics, stock and backlog
 const PLAN=36,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -4451,7 +4527,6 @@ const isDark=()=>(document.documentElement.dataset.theme||(matchMedia('(prefers-
 $('#thm').onclick=()=>{const m=isDark()?'light':'dark';document.documentElement.dataset.theme=m;try{localStorage.setItem('theme',m)}catch(e){}thmLabel();render();lastR=Date.now();const n=document.body.dataset.tab;if(n==='map')scRender(true);if(n==='log')lgRender(true);if(n==='wm')wmRender(true);if(n==='mes')mesRender(true)};thmLabel();
 document.querySelectorAll('.tabs .b').forEach(b=>{const f=()=>b.classList.toggle('z',b.textContent.trim()==='0');f();new MutationObserver(f).observe(b,{childList:true,characterData:true,subtree:true})});
 $('#bsel').onchange=e=>{selUnit=units.concat(failedArc).find(x=>x.id==e.target.value)||selUnit;e.target.blur();oKey='';drillRender();$('#drill').scrollIntoView({block:'nearest',behavior:'smooth'})};
-$('#lg').onclick=e=>{const tr=e.target.closest('tr'),m=tr&&/PCB-SUP-(\d+)A/.exec(tr.dataset.pc||'');if(!m)return;const u=units.find(x=>x.id==m[1]);if(u){selUnit=u;oKey='';drillRender();$('#drill').scrollIntoView({block:'nearest',behavior:'smooth'})}};
 document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>inject(b.dataset.f));
 </script>
 <!-- AGV tab 3D models (Sketchfab, CC BY 4.0): "Forklift" by Mantas Stankaitis (Sketchfab: Ethian74, sketchfab.com/mansta9) (recoloured), "Industrial - 3D AGV & Trolley - Omrom" by Cels. Meshopt-compressed GLB, base64. -->
