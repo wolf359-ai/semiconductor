@@ -1187,7 +1187,7 @@ function detail(u,c){
   return{tests,ev,qty,bad,why,mpn:c.pn+'-'+String(Math.floor(r()*1e4)).padStart(4,'0'),site:SITES[Math.floor(r()*6)],msl:1+Math.floor(r()*3),
     px:(10+r()*180).toFixed(1),py:(10+r()*120).toFixed(1),mach:'SMT-0'+(1+Math.floor(r()*3))+', head '+(1+Math.floor(r()*8)),oven:'Reflow-0'+(1+Math.floor(r()*3))+', zone 5'}
 }
-let lastFocus=null;
+let lastFocus=null,scBk=null;
 /*
  * =====================================================================
  * PANEL POP-OUTS
@@ -1212,10 +1212,14 @@ function openPn(k,ret){const s=PNS[k];if(!s)return;if($('#ov').hidden)PNF=docume
  * showM(title, status, body, footer, small): opens the shared modal. If a panel is
  * currently borrowed it is returned first and remembered in PNR.
  * closeM(): closes the modal, returns any borrowed panel and, if PNR is set, reopens
- * that panel instead of closing.
+ * that panel instead of closing. If scBk is set (a SCAR opened from Trace results), it
+ * reopens Trace results at the saved scroll position instead. Map nodes are re-rendered
+ * while the modal is open, so a detached .scn focus target is looked up again by id.
  */
 function showM(title,stat,body,foot,sm){if(PNO){PNR=PNO;pnHome()}lastFocus=document.activeElement;$('#dt').textContent=title;$('#dst').innerHTML=stat;$('#dbd').innerHTML=body;$('#dft').innerHTML=foot;$('#dlg').className='dlg'+(sm?' sm':'');$('#ov').hidden=false;$('#dbd').scrollTop=0;$('#dx').focus()}
-function closeM(){stop3d();pnHome();if(PNR){const k=PNR;PNR=null;openPn(k);return}$('#ov').hidden=true;if(lastFocus&&lastFocus.focus)lastFocus.focus()}
+function closeM(){stop3d();pnHome();if(PNR){const k=PNR;PNR=null;openPn(k);return}
+  if(scBk){const k=scBk;scBk=null;if(scG&&scG.N[scSel]){scTrShow();lastFocus=k.f;$('#dbd').scrollTop=k.y;const b=[...document.querySelectorAll('#scp [data-act="scar"]')].find(q=>q.dataset.sup===k.sup);if(b)b.focus({preventScroll:true});return}}
+  $('#ov').hidden=true;if(lastFocus&&!lastFocus.isConnected&&lastFocus.classList.contains('scn'))lastFocus=scNode(lastFocus.dataset.id);if(lastFocus&&lastFocus.focus)lastFocus.focus()}
 $('#dx').onclick=closeM;$('#ov').onclick=e=>{if(e.target.id==='ov')closeM()};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#ov').hidden)closeM()});
 $('#ov').addEventListener('keydown',e=>{if(e.key!=='Tab')return;const f=[...$('#dlg').querySelectorAll('button,textarea')],a=f[0],z=f[f.length-1];if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}});
@@ -2243,8 +2247,9 @@ function scTrBody(G){const sel=G.N[scSel],st=STP[sel.st],b=$('#dbd'),y=b.scrollT
 function scTr(G){if(!scTrOpen())return;if(scSel&&G.N[scSel])scTrBody(G);else closeM()}
 function scTrShow(){const G=scG;if(!G||!scSel||!G.N[scSel])return;
   if(!scTrOpen()){showM('','','<div id="scp"></div>','<div class="seg" id="scmode2" role="group" aria-label="Trace direction" style="margin-right:auto">'+[['fwd','Forward: blast radius'],['bwd','Backward: supplier'],['both','Both']].map(m=>'<button data-m="'+m[0]+'">'+m[1]+'</button>').join('')+'</div><button id="scClr">Clear selection</button><button id="mc">Close</button>');
-    $('#mc').onclick=closeM;$('#scClr').onclick=()=>{scSel='';scSig='';closeM();scRender(false)};$('#scmode2').onclick=e=>{const q=e.target.closest('button');if(q){scMode=q.dataset.m;scSig='';scRender(false)}}}
+    $('#mc').onclick=closeM;$('#scClr').onclick=()=>{scSel='';scSig='';closeM();scRender(false)};$('#scmode2').onclick=e=>{const q=e.target.closest('button');if(q){scMode=q.dataset.m;scSig='';scRender(false)}};lastFocus=scNode(scSel)}
   scTrBody(G)}
+function scNode(id){return[...document.querySelectorAll('#scm .scn')].find(z=>z.dataset.id===id)||null}
 function scPick(id,show){scSel=id||'';scSig='';scRender(false);if(scSel&&show)scTrShow();else if(!scSel&&scTrOpen())closeM()}
 function scStats(G){const V=Object.values(G.N),f=t=>V.filter(n=>n.t===t&&n.st==='fail').length,ex=scExp(G,null,null),nf=f('brd'),nr=[...ex.EB].filter(id=>G.N[id].st!=='fail').length;$('#scst').innerHTML=[['Blocked lots',f('lot')],['Failed boards',nf],['Suppliers implicated',f('sup')],['Orders with failed boards',f('ord')],['Revenue blocked',money(nf*UNITV)],['Revenue at risk',money(nr*UNITV)],['SCARs issued',scars.length],['Boards on hold',scHold.size]].map(a=>'<div><div class="l">'+a[0]+'</div><b style="font-size:22px">'+a[1]+'</b></div>').join('')}
 function scOpts(G){const s=$('#scf');if(document.activeElement===s)return;const ls=Object.values(G.N).filter(n=>n.t==='lot'&&n.st==='fail'),k=ls.map(l=>l.id).join();
@@ -2284,13 +2289,14 @@ function scarBuild(G,sup,lots){
   return{no:no,html:html,md:md}}
 function scarOpen(sup){
   const G=scG,x=scCtx(G,scSel),s=G.N['S:'+sup],lots=scBad(x,s);if(!lots.length)return;const d=scarBuild(G,sup,lots);let issued=scars.some(q=>q.no===d.no);
-  showM('SCAR '+d.no+' / '+sup,pl('pf','Draft'),d.html,'<span class="sub" id="scw" style="margin-right:auto"></span><button class="go" id="scI"'+(issued?' disabled':'')+'>'+(issued?'Issued':'Issue SCAR to supplier')+'</button><button id="scC">Copy SCAR</button><button id="scD" hidden>Download</button><button id="mc">Close</button>');$('#dlg').className='dlg xl';$('#mc').onclick=closeM;
+  const bk=scTrOpen()?{y:$('#dbd').scrollTop,f:lastFocus,sup:sup}:null;
+  showM('SCAR '+d.no+' / '+sup,pl('pf','Draft'),d.html,'<span class="sub" id="scw" style="margin-right:auto"></span><button class="go" id="scI"'+(issued?' disabled':'')+'>'+(issued?'Issued':'Issue SCAR to supplier')+'</button><button id="scC">Copy SCAR</button><button id="scD" hidden>Download</button><button id="mc">Close</button>');$('#dlg').className='dlg xl';$('#mc').onclick=closeM;scBk=bk;
   $('#scI').onclick=()=>{scars.push({no:d.no,sup:sup});scAlert('warn','SCAR '+d.no+' issued to '+sup+' ('+lots.length+' lot'+(lots.length>1?'s':'')+')');$('#scI').disabled=true;$('#scI').textContent='Issued';$('#scw').textContent='Issued to '+sup+' (simulated). Tracked in Active alerts.';scSig=''};
   $('#scC').onclick=()=>{$('#scw').textContent=cpy(d.md)?'SCAR copied to the clipboard.':'Copy was blocked in this view.'};
   claudeFn('downloads').then(dl=>{if(dl&&$('#scD')){$('#scD').hidden=false;$('#scD').onclick=async()=>{try{await dl.save({filename:d.no+'.md',data:d.md});$('#scw').textContent='SCAR ready to save.'}catch(e){$('#scw').textContent='Save was not available.'}}}})}
 $('#scm').addEventListener('click',e=>{const g=e.target.closest('.scn');if(g)scPick(g.dataset.id===scSel?'':g.dataset.id);else if(scSel&&e.target.closest('svg'))scPick('')});
 $('#scm').addEventListener('contextmenu',e=>{const g=e.target.closest('.scn');if(!g)return;e.preventDefault();scPick(g.dataset.id,true)});
-$('#scm').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const g=e.target.closest('.scn');if(!g)return;e.preventDefault();const id=g.dataset.id;scPick(id===scSel?'':id);const q=[...document.querySelectorAll('#scm .scn')].find(z=>z.dataset.id===id);if(q)q.focus()}});
+$('#scm').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const g=e.target.closest('.scn');if(!g)return;e.preventDefault();const id=g.dataset.id;scPick(id===scSel?'':id);const q=scNode(id);if(q)q.focus()}});
 $('#scmode').addEventListener('click',e=>{const b=e.target.closest('button');if(b){scMode=b.dataset.m;scSig='';scRender(false)}});
 $('#scf').addEventListener('change',e=>{scPick(e.target.value)});
 $('#dbd').addEventListener('click',e=>{const b=e.target.closest('#scp [data-act]');if(!b||!scG)return;const a=b.dataset.act;
