@@ -473,14 +473,13 @@ main>.mg{border-radius:3px;overflow:hidden}main>.mg>div{padding:10px 14px}main>.
 <section class="pn" style="grid-column:7/13;grid-row:4;--o:4"><h2>Supplier quality scorecard <span>worst score first, click a supplier for details</span></h2><div class="tw"><table><thead><tr><th>Supplier</th><th>Parts on board</th><th>Boards in review</th><th>DPPM</th><th>On-time delivery</th><th>Quality score</th></tr></thead><tbody id="sq"></tbody></table></div></section>
 </main>
 <!--
-  TAB: SUPPLY CHAIN MAP (m-map): trace controls, summary figures (#scst), the traceability graph and the trace results panel.
+  TAB: SUPPLY CHAIN MAP (m-map): trace controls, summary figures (#scst) and the traceability graph. Trace results open in the shared modal.
 -->
 <main id="m-map" class="off" role="tabpanel" aria-labelledby="tab-map">
 <div class="fbar" style="grid-column:1/-1;grid-row:1;justify-content:flex-start;border:1px solid var(--ln);border-radius:3px"><div><label for="scf">Focus on a blocked lot</label><select id="scf" style="min-width:300px"></select></div><div><label>Trace direction</label><div class="seg" id="scmode" role="group" aria-label="Trace direction"><button data-m="fwd" aria-pressed="false">Forward: blast radius</button><button data-m="bwd" aria-pressed="false">Backward: supplier</button><button data-m="both" aria-pressed="true" class="on">Both</button></div></div>
 <div class="sub lgd" style="margin-left:auto;padding-bottom:6px"><i style="background:var(--g)"></i>Passed, clear for production<i style="background:var(--r)"></i>Failed, blocked batch<i style="background:var(--y)"></i>Under review<i style="background:var(--c)"></i>In process<i style="background:transparent;border:2px dashed var(--r)"></i>At risk<i style="background:var(--r);height:3px;width:18px;border-radius:2px;vertical-align:3px"></i>Revenue exposed, thicker is more</div></div>
 <div class="mg" id="scst" style="grid-column:1/-1;grid-row:2;grid-template-columns:repeat(4,1fr)"></div>
-<section class="pn" style="grid-column:1/9;grid-row:3;--o:1"><h2>Traceability and supply chain map <span>supplier, inspection (PO and contract), part lot, system board, customer order. Click any node to trace it.</span></h2><div style="overflow-x:auto;overflow-y:hidden"><div id="scm"></div></div></section>
-<section class="pn" style="grid-column:9/13;grid-row:3;--o:2"><h2>Trace results <span id="scs"></span></h2><div id="scp" style="overflow:auto;flex:1 1 0;min-height:320px"></div></section>
+<section class="pn" style="grid-column:1/13;grid-row:3;--o:1"><h2>Traceability and supply chain map <span>supplier, inspection (PO and contract), part lot, system board, customer order. Click a node to trace it, right-click it for the trace results.</span></h2><div style="overflow-x:auto;overflow-y:hidden"><div id="scm"></div></div></section>
 </main>
 <!--
   TAB: LOGISTICS AND BACKLOG (m-log)
@@ -2193,11 +2192,11 @@ const short$=v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(1)+
 function scOrd(G,n){if(n.t!=='ord')return '';const bs=G.E.filter(e=>e[1]===n.id).map(e=>G.N[e[0]]),ex=scExp(G,null,null),bl=bs.filter(b=>b.st==='fail').length,rk=bs.filter(b=>b.st!=='fail'&&ex.EB.has(b.id)).length;
   return '<h4 style="margin-top:12px">Order revenue</h4>'+gridH([['Boards in order',bs.length],['Order value',money(bs.length*UNITV)],['Revenue blocked',money(bl*UNITV)],['Revenue at risk',money(rk*UNITV)]])}
 function scSvg(G){
-  const X=[8,218,473,698,883],CW=[170,215,185,145,195],sel=scSel&&G.N[scSel]?G.N[scSel]:null,hl=new Set(),risk=new Set();
+  const X=[8,353,773,1143,1447],CW=[170,215,185,145,195],sel=scSel&&G.N[scSel]?G.N[scSel]:null,hl=new Set(),risk=new Set();
   if(sel){const f=scTrace(G,sel.id,0),b=scTrace(G,sel.id,1);if(scMode!=='bwd')f.forEach(x=>hl.add(x));if(scMode!=='fwd')b.forEach(x=>hl.add(x));
     if(scMode!=='bwd'&&(sel.st==='fail'||sel.st==='rev'||[...f].some(x=>G.N[x].st==='fail')))f.forEach(x=>{const q=G.N[x];if((q.t==='brd'||q.t==='ord')&&q.st!=='fail')risk.add(x)})}
   const ex=scExp(G,sel,sel&&scMode!=='bwd'?scTrace(G,sel.id,0):null);
-  let s='<svg viewBox="0 0 1100 '+(G.H+4)+'" style="width:100%;min-width:900px;display:block" role="group" aria-label="Traceability and supply chain map">'+['Suppliers','Inspection, PO and contract','Part lots','System boards','Orders and revenue at risk'].map((t,i)=>'<text x="'+(X[i]+2)+'" y="18" style="fill:var(--mu);font-size:11px;font-weight:600">'+t.toUpperCase()+'</text>').join('');
+  let s='<svg viewBox="0 0 1650 '+(G.H+4)+'" style="width:100%;min-width:1350px;display:block" role="group" aria-label="Traceability and supply chain map">'+['Suppliers','Inspection, PO and contract','Part lots','System boards','Orders and revenue at risk'].map((t,i)=>'<text x="'+(X[i]+2)+'" y="18" style="fill:var(--mu);font-size:11px;font-weight:600">'+t.toUpperCase()+'</text>').join('');
   G.E.forEach(e=>{const a=G.N[e[0]],b=G.N[e[1]],x1=X[a.col]+CW[a.col],x2=X[b.col],mx=(x1+x2)/2,on=sel&&hl.has(e[0])&&hl.has(e[1]),fl=b.t==='ord'?(ex.EB.has(a.id)?1:0):ex.cnt[b.id],fw=fl>0?1.4+Math.min(6,fl*.9):1;
     s+='<path d="M'+x1+' '+a.y+' C'+mx+' '+a.y+' '+mx+' '+b.y+' '+x2+' '+b.y+'" style="fill:none;stroke:'+(on?'var(--'+SCX[b.st]+')':!sel&&fl>0?'var(--r)':'var(--ln)')+';stroke-width:'+(on?Math.max(2.2,fw):!sel&&fl>0?fw:1)+';opacity:'+(sel?(on?.95:.1):fl>0?.6:.5)+'"/>'});
   Object.values(G.N).forEach(n=>{const k=SCX[n.st],dim=sel&&!hl.has(n.id),isSel=sel&&sel.id===n.id,rk=risk.has(n.id),rv=ex.cnt[n.id]*UNITV,tag=scHold.has(n.id)?'HOLD':n.t==='sup'&&scars.some(q=>q.sup===n.label)?'SCAR':n.t==='insp'?(n.st==='rev'?'ESCAPE':'ACCEPT'):rv>0&&(n.t==='ord'||n.t==='sup'||(n.t==='lot'&&n.st!=='pass'))?short$(rv):rk?'AT RISK':'';
@@ -2232,10 +2231,21 @@ function scInsp(G,n){const I=n.t==='insp'?n:n.t==='lot'?G.N['I:'+n.id]:null;if(!
   return '<h4 style="margin-top:12px">Incoming inspection, contract and order</h4>'+gridH([['Purchase order',I.po],['Contract',I.ct],['Inspection lot',I.qi],['Goods receipt',I.grn],['Received',I.recd],['Sample result','0 of '+I.smp+' defective, accepted']])+
     (esc2?'<div class="bn bad" style="margin-top:8px"><b>Escape.</b> This lot passed incoming inspection but failed downstream, so the sampling plan did not catch the defect.</div>':'')}
 function scPanel(G){
-  const sel=scSel&&G.N[scSel];$('#scs').textContent=sel?'':'nothing selected';
-  if(!sel){const bl=Object.values(G.N).filter(n=>n.t==='lot'&&n.st==='fail');return '<div style="padding:12px"><div class="sub">Select any node to trace it. Click a red lot to see its blast radius forward and the supplier responsible backward.</div><h4 style="margin-top:12px">Blocked lots</h4>'+(bl.length?bl.map(l=>'<button data-act="sel" data-id="'+esc(l.id)+'" style="display:flex;width:100%;gap:8px;margin-bottom:4px;text-align:left"><span class="dot3" style="background:var(--r);margin-top:5px"></span><span class="mono">'+esc(l.label)+'</span><span class="sub" style="margin-left:auto">'+esc(l.sup)+'</span></button>').join(''):'<div class="sub">No blocked lots.</div>')+'</div>'}
-  const x=scCtx(G,sel.id),st=STP[sel.st];
-  return '<div style="padding:12px"><div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><b>'+esc(sel.label)+'</b>'+pl(st[0],st[1])+'</div><div class="sub">'+({sup:'Supplier',insp:'Incoming inspection',lot:'Part lot',brd:'System board',ord:'Customer order'}[sel.t])+(sel.sup?', '+esc(sel.sup):'')+(sel.t==='brd'?', '+sel.state+', '+esc(sel.sub):'')+'</div>'+scInsp(G,sel)+scOrd(G,sel)+(scMode!=='bwd'?scFwd(G,x):'')+(scMode!=='fwd'?scBwd(G,x):'')+'</div>'}
+  const sel=G.N[scSel],x=scCtx(G,sel.id);
+  return '<div><div class="sub">'+({sup:'Supplier',insp:'Incoming inspection',lot:'Part lot',brd:'System board',ord:'Customer order'}[sel.t])+(sel.sup?', '+esc(sel.sup):'')+(sel.t==='brd'?', '+sel.state+', '+esc(sel.sub):'')+'</div>'+scInsp(G,sel)+scOrd(G,sel)+(scMode!=='bwd'?scFwd(G,x):'')+(scMode!=='fwd'?scBwd(G,x):'')+'</div>'}
+/*
+ * Trace results modal: opens when a node is right-clicked on the map and refreshes in place (keeping its scroll position)
+ * whenever the map re-renders. Closing it keeps the selection highlighted; Clear selection removes it.
+ */
+const scTrOpen=()=>!$('#ov').hidden&&!!$('#dbd #scp');
+function scTrBody(G){const sel=G.N[scSel],st=STP[sel.st],b=$('#dbd'),y=b.scrollTop;$('#dt').textContent='Trace results: '+sel.label;$('#dst').innerHTML=pl(st[0],st[1]);$('#scp').innerHTML=scPanel(G);b.scrollTop=y;
+  document.querySelectorAll('#scmode2 button').forEach(q=>{const on=q.dataset.m===scMode;q.classList.toggle('on',on);q.setAttribute('aria-pressed',on)})}
+function scTr(G){if(!scTrOpen())return;if(scSel&&G.N[scSel])scTrBody(G);else closeM()}
+function scTrShow(){const G=scG;if(!G||!scSel||!G.N[scSel])return;
+  if(!scTrOpen()){showM('','','<div id="scp"></div>','<div class="seg" id="scmode2" role="group" aria-label="Trace direction" style="margin-right:auto">'+[['fwd','Forward: blast radius'],['bwd','Backward: supplier'],['both','Both']].map(m=>'<button data-m="'+m[0]+'">'+m[1]+'</button>').join('')+'</div><button id="scClr">Clear selection</button><button id="mc">Close</button>');
+    $('#mc').onclick=closeM;$('#scClr').onclick=()=>{scSel='';scSig='';closeM();scRender(false)};$('#scmode2').onclick=e=>{const q=e.target.closest('button');if(q){scMode=q.dataset.m;scSig='';scRender(false)}}}
+  scTrBody(G)}
+function scPick(id,show){scSel=id||'';scSig='';scRender(false);if(scSel&&show)scTrShow();else if(!scSel&&scTrOpen())closeM()}
 function scStats(G){const V=Object.values(G.N),f=t=>V.filter(n=>n.t===t&&n.st==='fail').length,ex=scExp(G,null,null),nf=f('brd'),nr=[...ex.EB].filter(id=>G.N[id].st!=='fail').length;$('#scst').innerHTML=[['Blocked lots',f('lot')],['Failed boards',nf],['Suppliers implicated',f('sup')],['Orders with failed boards',f('ord')],['Revenue blocked',money(nf*UNITV)],['Revenue at risk',money(nr*UNITV)],['SCARs issued',scars.length],['Boards on hold',scHold.size]].map(a=>'<div><div class="l">'+a[0]+'</div><b style="font-size:22px">'+a[1]+'</b></div>').join('')}
 function scOpts(G){const s=$('#scf');if(document.activeElement===s)return;const ls=Object.values(G.N).filter(n=>n.t==='lot'&&n.st==='fail'),k=ls.map(l=>l.id).join();
   if(s.dataset.k!==k){s.dataset.k=k;s.innerHTML='<option value="">Select a blocked lot...</option>'+ls.map(l=>'<option value="'+esc(l.id)+'">'+esc(l.label+' ('+l.sup+')')+'</option>').join('')}
@@ -2244,7 +2254,7 @@ function scRender(refresh){
   if(refresh||!scReal||(!scSel&&Date.now()-scT>15000)){scReal=failedArc.slice(0,5).concat(units.filter(x=>!failedArc.includes(x)).slice(-5));scT=Date.now()}
   const sig=failedArc.map(x=>x.id).join()+'|'+scReal.map(x=>x.done?(x.flag?'F':'P'):'I').join('')+'|'+scSel+scMode+scHold.size+scWO.size+scars.length;if(sig===scSig)return;scSig=sig;
   const G=scG=scBuild();scLayout(G);if(scSel&&!G.N[scSel])scSel='';
-  $('#scm').innerHTML=scSvg(G);$('#scp').innerHTML=scPanel(G);scStats(G);scOpts(G);
+  $('#scm').innerHTML=scSvg(G);scStats(G);scOpts(G);scTr(G);
   document.querySelectorAll('#scmode button').forEach(b=>{const on=b.dataset.m===scMode;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)})}
 function scTick(){$('#tmc').textContent=failedArc.length;if($('#m-map').classList.contains('off'))return;scRender(false)}
 /*
@@ -2278,13 +2288,14 @@ function scarOpen(sup){
   $('#scI').onclick=()=>{scars.push({no:d.no,sup:sup});scAlert('warn','SCAR '+d.no+' issued to '+sup+' ('+lots.length+' lot'+(lots.length>1?'s':'')+')');$('#scI').disabled=true;$('#scI').textContent='Issued';$('#scw').textContent='Issued to '+sup+' (simulated). Tracked in Active alerts.';scSig=''};
   $('#scC').onclick=()=>{$('#scw').textContent=cpy(d.md)?'SCAR copied to the clipboard.':'Copy was blocked in this view.'};
   claudeFn('downloads').then(dl=>{if(dl&&$('#scD')){$('#scD').hidden=false;$('#scD').onclick=async()=>{try{await dl.save({filename:d.no+'.md',data:d.md});$('#scw').textContent='SCAR ready to save.'}catch(e){$('#scw').textContent='Save was not available.'}}}})}
-$('#scm').addEventListener('click',e=>{const g=e.target.closest('.scn');if(!g)return;scSel=g.dataset.id===scSel?'':g.dataset.id;scSig='';scRender(false)});
-$('#scm').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const g=e.target.closest('.scn');if(!g)return;e.preventDefault();const id=g.dataset.id;scSel=id===scSel?'':id;scSig='';scRender(false);const q=[...document.querySelectorAll('#scm .scn')].find(z=>z.dataset.id===id);if(q)q.focus()}});
+$('#scm').addEventListener('click',e=>{const g=e.target.closest('.scn');if(g)scPick(g.dataset.id===scSel?'':g.dataset.id);else if(scSel&&e.target.closest('svg'))scPick('')});
+$('#scm').addEventListener('contextmenu',e=>{const g=e.target.closest('.scn');if(!g)return;e.preventDefault();scPick(g.dataset.id,true)});
+$('#scm').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const g=e.target.closest('.scn');if(!g)return;e.preventDefault();const id=g.dataset.id;scPick(id===scSel?'':id);const q=[...document.querySelectorAll('#scm .scn')].find(z=>z.dataset.id===id);if(q)q.focus()}});
 $('#scmode').addEventListener('click',e=>{const b=e.target.closest('button');if(b){scMode=b.dataset.m;scSig='';scRender(false)}});
-$('#scf').addEventListener('change',e=>{scSel=e.target.value;scSig='';scRender(false)});
-$('#scp').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||!scG)return;const a=b.dataset.act;
+$('#scf').addEventListener('change',e=>{scPick(e.target.value)});
+$('#dbd').addEventListener('click',e=>{const b=e.target.closest('#scp [data-act]');if(!b||!scG)return;const a=b.dataset.act;
   if(a==='sel'){scSel=b.dataset.id;scSig='';scRender(false)}
-  else if(a==='open'){const u=units.concat(failedArc).find(q=>q.sn===b.dataset.sn);if(u){selUnit=u;oKey='';showTab('board');drillRender()}}
+  else if(a==='open'){const u=units.concat(failedArc).find(q=>q.sn===b.dataset.sn);if(u){closeM();selUnit=u;oKey='';showTab('board');drillRender()}}
   else if(a==='hold'){const x=scCtx(scG,scSel);x.wip.forEach(w=>scHold.add(w.id));scAlert('warn','Hold placed on '+x.wip.length+' in-process boards from '+scG.N[scSel].label);scSig='';scRender(false)}
   else if(a==='rwo'){const x=scCtx(scG,scSel),id='WO-RWK-'+(6001+scWO.size);scWO.add(scSel);workOrders.push({id:id,board:scG.N[scSel].label});scAlert('info','Rework work order '+id+' created for '+x.fin.filter(q=>q.st!=='fail').length+' finished boards ('+scG.N[scSel].label+')');scSig='';scRender(false)}
   else if(a==='scar')scarOpen(b.dataset.sup)});
