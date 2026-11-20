@@ -479,7 +479,7 @@ main>.mg{border-radius:3px;overflow:hidden}main>.mg>div{padding:10px 14px}main>.
 <div class="fbar" style="grid-column:1/-1;grid-row:1;justify-content:flex-start;border:1px solid var(--ln);border-radius:3px"><div><label for="scf">Focus on a blocked lot</label><select id="scf" style="min-width:300px"></select></div><div><label>Trace direction</label><div class="seg" id="scmode" role="group" aria-label="Trace direction"><button data-m="fwd" aria-pressed="false">Forward: blast radius</button><button data-m="bwd" aria-pressed="false">Backward: supplier</button><button data-m="both" aria-pressed="true" class="on">Both</button></div></div>
 <div class="sub lgd" style="margin-left:auto;padding-bottom:6px"><i style="background:var(--g)"></i>Passed, clear for production<i style="background:var(--r)"></i>Failed, blocked batch<i style="background:var(--y)"></i>Under review<i style="background:var(--c)"></i>In process<i style="background:transparent;border:2px dashed var(--r)"></i>At risk<i style="background:var(--r);height:3px;width:18px;border-radius:2px;vertical-align:3px"></i>Revenue exposed, thicker is more</div></div>
 <div class="mg" id="scst" style="grid-column:1/-1;grid-row:2;grid-template-columns:repeat(4,1fr)"></div>
-<section class="pn" style="grid-column:1/13;grid-row:3;--o:1"><h2>Traceability and supply chain map <span>supplier, inspection (PO and contract), part lot, system board, customer order. Click a node to trace it, right-click it for the trace results.</span></h2><div style="overflow-x:auto;overflow-y:hidden"><div id="scm"></div></div></section>
+<section class="pn" style="grid-column:1/13;grid-row:3;--o:1"><h2>Traceability and supply chain map <span>supplier, inspection (PO and contract), part lot, system board, customer order. Click a node to trace it, right-click it for trace results and actions.</span></h2><div style="overflow-x:auto;overflow-y:hidden"><div id="scm"></div></div></section>
 </main>
 <!--
   TAB: LOGISTICS AND BACKLOG (m-log)
@@ -1733,7 +1733,7 @@ $('#aitf').onchange=e=>{AIM.tf=e.target.value;aiSort()};$('#aitt').onchange=e=>{
 $('#aiclr').onclick=aiReset;
 setInterval(()=>{if(AIM.tw!=='0'&&AIM.tw!=='c'||AIM.grp==='age')aiSort()},5000);
 $('#aiunp').onclick=()=>[...$('#aipin').children].forEach(el=>aiPin(el,false));
-$('#cm').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;if(k==='g:sub'){if($('#cm2').hidden)cm2Show(b);else cm2Hide(true);return}cmHide();if(k==='g:wx'){wxLogShow();return}if(k==='g:clr'){aiReset();return}if(k==='g:cola'||k==='g:expa'){aiColAll(k==='g:cola');return}if(k.indexOf('a:')===0)aiAct(k);else if(k.indexOf('m:')===0)mesAct(k);else if(k.indexOf('w:')===0)wmAct(k);else if(k.indexOf('s:')===0){const e=$('#aisort');e.value=k.slice(2);e.dispatchEvent(new Event('change'));$('#aisb').focus()}else cmAct(k)});
+$('#cm').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;if(k==='g:sub'){if($('#cm2').hidden)cm2Show(b);else cm2Hide(true);return}cmHide();if(k==='g:wx'){wxLogShow();return}if(k==='g:clr'){aiReset();return}if(k==='g:cola'||k==='g:expa'){aiColAll(k==='g:cola');return}if(k.indexOf('a:')===0)aiAct(k);else if(k.indexOf('sc:')===0)scMenuAct(k.slice(3));else if(k.indexOf('m:')===0)mesAct(k);else if(k.indexOf('w:')===0)wmAct(k);else if(k.indexOf('s:')===0){const e=$('#aisort');e.value=k.slice(2);e.dispatchEvent(new Event('change'));$('#aisb').focus()}else cmAct(k)});
 $('#cm2').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;cmHide();aiGrpSet(b.dataset.g)});
 $('#cm2').addEventListener('keydown',e=>{const bs=[...$('#cm2').querySelectorAll('button')],i=bs.indexOf(document.activeElement);if(e.key==='ArrowDown'){e.preventDefault();bs[(i+1)%bs.length].focus()}else if(e.key==='ArrowUp'){e.preventDefault();bs[(i+bs.length-1)%bs.length].focus()}else if(e.key==='ArrowLeft'||e.key==='Escape'){e.preventDefault();e.stopPropagation();cm2Hide(true)}else if(e.key==='Tab')cmHide()});
 $('#cm').addEventListener('keydown',e=>{const bs=[...$('#cm').querySelectorAll('button')],i=bs.indexOf(document.activeElement);if(e.key==='ArrowRight'&&document.activeElement.dataset.k==='g:sub'){e.preventDefault();cm2Show(document.activeElement);return}if(e.key==='ArrowDown'){e.preventDefault();bs[(i+1)%bs.length].focus()}else if(e.key==='ArrowUp'){e.preventDefault();bs[(i+bs.length-1)%bs.length].focus()}else if(e.key==='Escape'||e.key==='Tab'){cmHide()}});
@@ -2149,7 +2149,7 @@ $('#dtb').addEventListener('keydown',()=>{});
 function lotOf(pn,id){let h=0;for(const ch of pn+Math.floor(id/5))h=(h*31+ch.charCodeAt(0))>>>0;const q=rng(h);return '26'+(10+Math.floor(q()*40))+'-'+Array.from({length:4},()=>'0123456789ABCDEF'[Math.floor(q()*16)]).join('')}
 const SCF=[['U1','SoC'],['U10 to U13','HBM'],['U20','PMIC'],['PCBA','Assembly'],['U41','NIC']],SCC=['U1','U10 to U13','U20','PCBA'],ORD=[['SO-70412','Atlas Cloud'],['SO-70418','Northwind AI'],['SO-70425','Meridian HPC'],['SO-70431','Helio Compute'],['SO-70440','Orbital Labs']],
   STP={fail:['pf','Failed, blocked'],rev:['pw','Under review'],pass:['pp','Passed'],pend:['pi','In process']},SCX={fail:'r',rev:'y',pass:'g',pend:'c'},UNITV=11400;
-let scSel='',scMode='both',scSig='',scG=null,scReal=null,scT=0,scHold=new Set(),scWO=new Set(),scars=[];
+let scSel='',scMode='both',scSig='',scG=null,scReal=null,scT=0,scHold=new Set(),scWO=new Set(),scars=[],scM=null;
 const scAlert=(lv,t)=>{alerts.unshift({id:alN++,lv:lv,title:t,ts:hms(),ack:false});if(alerts.length>12)alerts.pop();alKey='';alertsRender();kpi2();if(lv==='info')toast(t)};
 function toast(t){const b=$('#tst'),d=document.createElement('div');d.textContent=t;b.appendChild(d);while(b.children.length>3)b.firstChild.remove();setTimeout(()=>d.classList.add('out'),3600);setTimeout(()=>d.remove(),4000)}
 /*
@@ -2157,7 +2157,8 @@ function toast(t){const b=$('#tst'),d=document.createElement('div');d.textConten
  * scBuild() builds nodes (t: sup, lot, insp, brd, ord) and
  * edges from the BOMs and failed boards. scLayout() places them in columns, scTrace()
  * walks forward or backward from a node, scSvg() draws the map, scPanel() fills the
- * trace results with actions (hold lots, open boards, raise a SCAR).
+ * trace results with actions (hold lots, open boards, raise a SCAR). Left-click traces on
+ * the map only; right-click opens the node menu (scMenu), whose Trace results items open the modal.
  */
 function scBuild(){
   const N={},E=[],add=n=>N[n.id]||(N[n.id]=n),link=(a,b)=>{if(!E.some(e=>e[0]===a&&e[1]===b))E.push([a,b])};
@@ -2238,7 +2239,7 @@ function scPanel(G){
   const sel=G.N[scSel],x=scCtx(G,sel.id);
   return '<div><div class="sub">'+({sup:'Supplier',insp:'Incoming inspection',lot:'Part lot',brd:'System board',ord:'Customer order'}[sel.t])+(sel.sup?', '+esc(sel.sup):'')+(sel.t==='brd'?', '+sel.state+', '+esc(sel.sub):'')+'</div>'+scInsp(G,sel)+scOrd(G,sel)+(scMode!=='bwd'?scFwd(G,x):'')+(scMode!=='fwd'?scBwd(G,x):'')+'</div>'}
 /*
- * Trace results modal: opens when a node is right-clicked on the map and refreshes in place (keeping its scroll position)
+ * Trace results modal: opens from a node's right-click menu (Trace results) and refreshes in place (keeping its scroll position)
  * whenever the map re-renders. Closing it keeps the selection highlighted; Clear selection removes it.
  */
 const scTrOpen=()=>!$('#ov').hidden&&!!$('#dbd #scp');
@@ -2256,10 +2257,11 @@ function scOpts(G){const s=$('#scf');if(document.activeElement===s)return;const 
   if(s.dataset.k!==k){s.dataset.k=k;s.innerHTML='<option value="">Select a blocked lot...</option>'+ls.map(l=>'<option value="'+esc(l.id)+'">'+esc(l.label+' ('+l.sup+')')+'</option>').join('')}
   s.value=scSel&&G.N[scSel]&&G.N[scSel].t==='lot'&&G.N[scSel].st==='fail'?scSel:''}
 function scRender(refresh){
-  if(refresh||!scReal||(!scSel&&Date.now()-scT>15000)){scReal=failedArc.slice(0,5).concat(units.filter(x=>!failedArc.includes(x)).slice(-5));scT=Date.now()}
+  if(refresh||!scReal||(!scSel&&Date.now()-scT>15000&&!(scM&&!$('#cm').hidden))){scReal=failedArc.slice(0,5).concat(units.filter(x=>!failedArc.includes(x)).slice(-5));scT=Date.now()}
   const sig=failedArc.map(x=>x.id).join()+'|'+scReal.map(x=>x.done?(x.flag?'F':'P'):'I').join('')+'|'+scSel+scMode+scHold.size+scWO.size+scars.length;if(sig===scSig)return;scSig=sig;
   const G=scG=scBuild();scLayout(G);if(scSel&&!G.N[scSel])scSel='';
-  $('#scm').innerHTML=scSvg(G);scStats(G);scOpts(G);scTr(G);
+  const fa=document.activeElement,fid=fa&&fa.classList&&fa.classList.contains('scn')&&$('#scm').contains(fa)?fa.dataset.id:'';
+  $('#scm').innerHTML=scSvg(G);if(fid){const q=scNode(fid);if(q)q.focus({preventScroll:true})}scStats(G);scOpts(G);scTr(G);
   document.querySelectorAll('#scmode button').forEach(b=>{const on=b.dataset.m===scMode;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)})}
 function scTick(){$('#tmc').textContent=failedArc.length;if($('#m-map').classList.contains('off'))return;scRender(false)}
 /*
@@ -2295,15 +2297,49 @@ function scarOpen(sup){
   $('#scC').onclick=()=>{$('#scw').textContent=cpy(d.md)?'SCAR copied to the clipboard.':'Copy was blocked in this view.'};
   claudeFn('downloads').then(dl=>{if(dl&&$('#scD')){$('#scD').hidden=false;$('#scD').onclick=async()=>{try{await dl.save({filename:d.no+'.md',data:d.md});$('#scw').textContent='SCAR ready to save.'}catch(e){$('#scw').textContent='Save was not available.'}}}})}
 $('#scm').addEventListener('click',e=>{const g=e.target.closest('.scn');if(g)scPick(g.dataset.id===scSel?'':g.dataset.id);else if(scSel&&e.target.closest('svg'))scPick('')});
-$('#scm').addEventListener('contextmenu',e=>{const g=e.target.closest('.scn');if(!g)return;e.preventDefault();scPick(g.dataset.id,true)});
-$('#scm').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const g=e.target.closest('.scn');if(!g)return;e.preventDefault();const id=g.dataset.id;scPick(id===scSel?'':id);const q=scNode(id);if(q)q.focus()}});
+/*
+ * Map node right-click menu (shared #cm, keys 'sc:...'): Trace results in each direction (the only way the modal opens
+ * from the map), trace on map, the node's actions (open board, hold, rework work order, SCAR) and supplier analyses.
+ * scM keeps the node the menu was opened for; actions look it up again because the map re-renders on every tick.
+ */
+const SCT={sup:'Supplier',insp:'Incoming inspection',lot:'Part lot',brd:'System board',ord:'Customer order'};
+function scMenu(id,x,y){const G=scG,n=G&&G.N[id];if(!n)return;
+  const c=scCtx(G,id),risky=n.st==='fail'||n.st==='rev'||c.boards.some(b=>b.st==='fail'),sups=(n.t==='sup'?[n]:c.sups).filter(s=>scBad(c,s).length).map(s=>s.label),
+    sup=n.t==='sup'?n.label:n.t==='lot'||n.t==='insp'?n.sup:'',nb=c.boards.length,ns=n.t==='sup'?1:c.sups.length,fin=c.fin.filter(b=>b.st!=='fail').length,act=[];
+  scM={id:id,sups:sups};
+  if(n.t==='brd'&&n.real)act.push(['sc:open','Open board',esc(n.label)]);
+  if(risky&&c.wip.length&&!c.wip.every(b=>scHold.has(b.id)))act.push(['sc:hold','Hold in-process boards',c.wip.length+' board'+(c.wip.length===1?'':'s')]);
+  if(risky&&!scWO.has(id))act.push(['sc:rwo','Create rework work order',fin?fin+' finished':'']);
+  sups.forEach((s,i)=>act.push(['sc:scar:'+i,'Generate SCAR with data backup',esc(s)]));
+  cmShow(x,y,esc(n.label+' ('+SCT[n.t].toLowerCase()+')'),[['#','Trace results'],['sc:tr:fwd','Forward: blast radius',nb+' board'+(nb===1?'':'s')],['sc:tr:bwd','Backward: supplier',ns+' supplier'+(ns===1?'':'s')],['sc:tr:both','Both directions'],'-',
+    ['sc:hl',id===scSel?'Clear trace on map':'Trace on map']].concat(act.length?['-',['#','Actions']].concat(act):[],
+    sup?['-',['#','Supplier analysis'],['sc:shist','Quality history',esc(sup)],['sc:slots','Lots received and inspection'],['sc:s8d','Corrective actions (8D)']]:[],['-',['sc:cp','Copy name',esc(n.label)]]))}
+function scMenuAt(g,e){if(!g)return;e.preventDefault();const id=g.dataset.id;if(!$('#cm').hidden&&scM&&scM.id===id&&Date.now()-cmT<300)return;
+  if(e.type==='contextmenu'&&(e.button===2||e.clientX||e.clientY))scMenu(id,e.clientX,e.clientY);else{const r=g.getBoundingClientRect();scMenu(id,r.left+20,r.bottom-4)}}
+function scMenuAct(k){const G=scG,id=scM&&scM.id,n=G&&id&&G.N[id];if(!n)return;const fo=()=>{const z=scNode(id);if(z)z.focus({preventScroll:true})};
+  if(k.indexOf('tr:')===0){scMode=k.slice(3);scPick(id,true);return}
+  if(k==='hl'){scPick(id===scSel?'':id);fo();return}
+  if(k==='cp'){toast(cpy(n.label)?'Copied '+n.label:'Copy was blocked in this view.');fo();return}
+  if(k==='open'){scOpen(n.label);return}
+  if(k==='shist'||k==='slots'||k==='s8d'){const s=n.t==='sup'?n.label:n.sup;fo();
+    invShow(s+' / '+{shist:'quality history',slots:'lots received',s8d:'corrective actions'}[k],pl('pi',{shist:'Supplier',slots:'Incoming',s8d:'8D'}[k]),(k==='shist'?hSupQ:k==='slots'?hSupLots:hSup8d)(s));return}
+  scPick(id);fo();
+  if(k==='hold')toast(scHoldAct());else if(k==='rwo')scRwoAct();else if(k.indexOf('scar:')===0)scarOpen(scM.sups[+k.slice(5)])}
+function scOpen(sn){const n=scG&&scG.N['B:'+sn],u=units.concat(failedArc).find(q=>q.sn===sn)||(n&&n.u);if(u){if(!$('#ov').hidden)closeM();selUnit=u;oKey='';showTab('board');drillRender()}}
+function scHoldAct(){const x=scCtx(scG,scSel),t='Hold placed on '+x.wip.length+' in-process boards from '+scG.N[scSel].label;x.wip.forEach(w=>scHold.add(w.id));scAlert('warn',t);scSig='';scRender(false);return t}
+function scRwoAct(){const x=scCtx(scG,scSel),id='WO-RWK-'+(6001+scWO.size);scWO.add(scSel);workOrders.push({id:id,board:scG.N[scSel].label});scAlert('info','Rework work order '+id+' created for '+x.fin.filter(q=>q.st!=='fail').length+' finished boards ('+scG.N[scSel].label+')');scSig='';scRender(false)}
+$('#scm').addEventListener('contextmenu',e=>scMenuAt(e.target.closest('.scn'),e));
+$('#scm').addEventListener('keydown',e=>{const g=e.target.closest('.scn');if(!g)return;
+  if(e.key==='Enter'||e.key===' '){e.preventDefault();const id=g.dataset.id;scPick(id===scSel?'':id);const q=scNode(id);if(q)q.focus()}
+  else if(e.key==='ContextMenu'||(e.shiftKey&&e.key==='F10'))scMenuAt(g,e)});
+$('#cm').addEventListener('keydown',e=>{if(e.key==='Escape'&&scM&&$('#cm').querySelector('[data-k^="sc:"]')){const z=scNode(scM.id);if(z)z.focus({preventScroll:true})}});
 $('#scmode').addEventListener('click',e=>{const b=e.target.closest('button');if(b){scMode=b.dataset.m;scSig='';scRender(false)}});
 $('#scf').addEventListener('change',e=>{scPick(e.target.value)});
 $('#dbd').addEventListener('click',e=>{const b=e.target.closest('#scp [data-act]');if(!b||!scG)return;const a=b.dataset.act;
   if(a==='sel'){scSel=b.dataset.id;scSig='';scRender(false)}
-  else if(a==='open'){const u=units.concat(failedArc).find(q=>q.sn===b.dataset.sn);if(u){closeM();selUnit=u;oKey='';showTab('board');drillRender()}}
-  else if(a==='hold'){const x=scCtx(scG,scSel);x.wip.forEach(w=>scHold.add(w.id));scAlert('warn','Hold placed on '+x.wip.length+' in-process boards from '+scG.N[scSel].label);scSig='';scRender(false)}
-  else if(a==='rwo'){const x=scCtx(scG,scSel),id='WO-RWK-'+(6001+scWO.size);scWO.add(scSel);workOrders.push({id:id,board:scG.N[scSel].label});scAlert('info','Rework work order '+id+' created for '+x.fin.filter(q=>q.st!=='fail').length+' finished boards ('+scG.N[scSel].label+')');scSig='';scRender(false)}
+  else if(a==='open')scOpen(b.dataset.sn)
+  else if(a==='hold')scHoldAct()
+  else if(a==='rwo')scRwoAct()
   else if(a==='scar')scarOpen(b.dataset.sup)});
 
 // ===== Logistics, stock and backlog
