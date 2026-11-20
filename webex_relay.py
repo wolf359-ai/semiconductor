@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Local server for the Board & Chassis Traceability dashboard.
 
-Serves the files in this folder and relays Webex messages, because Webex's API
-rejects direct calls from browser pages (no CORS on its preflight responses).
+Serves the dashboard and relays Webex messages, because Webex's API rejects
+direct calls from browser pages (no CORS on its preflight responses).
 
     python3 webex_relay.py            # then open http://127.0.0.1:8765/
+
+Only GET of the dashboard HTML and the two Lumina logo PNGs is served; / redirects
+to the dashboard. Every other path (folder listings, .git, other files) is 404,
+and methods other than GET and POST are rejected.
 
 POST /relay/webex/messages is forwarded to https://webexapis.com/v1/messages.
 POST /relay/webex/file takes {toPersonEmail, markdown, type, name, file} where
@@ -29,9 +33,11 @@ import json
 import os
 import re
 import secrets
+import shutil
 import ssl
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 HOST, PORT = "127.0.0.1", int(os.environ.get("PORT", "8765"))
@@ -52,9 +58,18 @@ TLS = ssl.create_default_context()
 ALLOWED_ORIGINS = {f"http://{HOST}:{PORT}", f"http://localhost:{PORT}"}
 
 
-class Handler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *a, **kw):
-        super().__init__(*a, directory=os.path.dirname(os.path.abspath(__file__)), **kw)
+ROOT = os.path.dirname(os.path.abspath(__file__))
+DASHBOARD = "Board & Chassis Traceability – Live Diagnostics(11).html"
+STATIC = {
+    "/" + urllib.parse.quote(DASHBOARD): (DASHBOARD, "text/html; charset=utf-8"),
+    "/lumina-silicon-logo.png": ("lumina-silicon-logo.png", "image/png"),
+    "/lumina-silicon-logo-horizontal.png": ("lumina-silicon-logo-horizontal.png", "image/png"),
+}
+
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    server_version = "DashboardRelay"
+    sys_version = ""
 
     def _reply(self, code, payload, extra=None):
         body = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
@@ -68,9 +83,34 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if self.path == "/relay/webex/config":
+        path = urllib.parse.urlsplit(self.path).path
+        if path == "/relay/webex/config":
+            origin = self.headers.get("Origin")
+            if origin and origin not in ALLOWED_ORIGINS:
+                return self._reply(403, {"message": "Origin not allowed"})
             return self._reply(200, {"space": SPACE or None})
-        return super().do_GET()
+        if path in ("/", "/index.html"):
+            return self._reply(302, {"message": "See dashboard"},
+                               {"Location": "/" + urllib.parse.quote(DASHBOARD)})
+        # Exact match on the normalised encoding, so no listings, traversal or
+        # dotfiles can reach the filesystem.
+        hit = STATIC.get(urllib.parse.quote(urllib.parse.unquote(path)))
+        if not hit:
+            return self._reply(404, {"message": "Not found"})
+        name, ctype = hit
+        try:
+            f = open(os.path.join(ROOT, name), "rb")
+        except OSError:
+            return self._reply(404, {"message": "Not found"})
+        with f:
+            size = os.fstat(f.fileno()).st_size
+            self.send_response(200)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(size))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            shutil.copyfileobj(f, self.wfile)
 
     @staticmethod
     def _space_id(auth):
