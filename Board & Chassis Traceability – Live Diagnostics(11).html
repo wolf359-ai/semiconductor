@@ -1264,7 +1264,7 @@ const PN={
 'Chamber temperature':{spl:SP+'tool=CVD-* | timechart span=250ms avg(temp_c) avg(flow_sccm)',info:'Chamber zone temperature from TC-ZN2 and N\u2082 purge flow from MFC-N2-01, sampled every 250 ms. Red dashed lines mark the 224.5 \u00b0C and 455 sccm alert thresholds.',csv:()=>csv('time,temp_c,flow_sccm',tfRows(TW))},
 'Thermal vs gas flow':{spl:SP+'| eventstats corr(temp_c,flow_sccm) as r | table temp_c flow_sccm r',info:'Scatter of the last 30 seconds of samples with a regression line. A strong negative slope means temperature is following purge flow.',csv:()=>csv('time,temp_c,flow_sccm',tfRows(W))},
 'Unit traceability':{spl:'index=fab_trace sourcetype=unit:envelope | stats max(temp_c) as peak_temp min(flow_sccm) as min_flow by board chassis lot tool',info:'Each board and chassis with the peak chamber temperature and minimum flow it experienced while in process.',csv:()=>csv('board,chassis,lot,tool,status,peak_temp_c,min_flow_sccm',units.map(u=>[u.sn,u.ch,u.lot,u.tool,u.done?(u.flag?'REVIEW':'PASS'):'IN PROCESS',u.tmax.toFixed(1),u.fmin.toFixed(0)]))},
-'Raw events':{spl:SP+'| head 60',info:'Latest raw events as indexed, in key=value form. The feed follows the tab it was opened from: cleanroom sensors on Yield Analytics, unit envelopes on Board Integration, genealogy links on Supply Chain Map, shipment tracking on Logistics, warehouse tasks on Warehouse Management, vehicle telematics on AGV and MES transactions on MES Execution.',csv:()=>csv('event',[...document.querySelectorAll('#raw:not([hidden]) div,#raw2:not([hidden]) div')].map(e=>[e.textContent]))},
+'Raw events':{spl:SP+'| head 60',info:'Latest raw events as indexed, in key=value form. The feed follows the tab it was opened from: cleanroom sensors on Yield Analytics, unit envelopes on Board Integration, genealogy links on Supply Chain Map, shipment tracking on Logistics, warehouse tasks on Warehouse Management, vehicle telematics, UWB location and vehicle Wi-Fi on AGV and MES transactions on MES Execution.',csv:()=>csv('event',[...document.querySelectorAll('#raw:not([hidden]) div,#raw2:not([hidden]) div')].map(e=>[e.textContent]))},
 'AI diagnostic stream':{spl:'index=fab_ai sourcetype=diagnostic:stream | table _time level title message',info:'Rule-based analysis of thermal and gas-flow correlation, wafer hotspots and Iddq. Each message names the probable cause and the boards exposed.',csv:()=>csv('time,title,message',[...document.querySelectorAll('#stream .ai')].map(e=>[e.querySelector('time').textContent,e.querySelector('b').textContent,e.querySelector('p').textContent]))},
 'Statistical failure hotspots':{spl:'index=fab_test sourcetype=wafer:probe | stats count as tests sum(fail) as fails by die_x die_y | eval p_hat=fails/tests',info:'Maximum-likelihood failure rate per die. Dies above 30% with at least 2 tests are shown as hotspots.',csv:()=>csv('die_x,die_y,tests,failures,p_hat',dies.map(d=>[d.gx,d.gy,d.n.toFixed(1),d.f.toFixed(1),(d.n?d.f/d.n:0).toFixed(3)]))},
 'SMT reflow':{spl:'index=fab_smt sourcetype=reflow:profile board=* | timechart span=250ms avg(zone_temp_c)',info:'Zone temperature for the board in the oven against the ideal profile. The green band is the 240 to 250 \u00b0C peak window.',csv:()=>csv('sample,zone_temp_c',reflow.map((v,i)=>[i,v.toFixed(1)]))},
@@ -2373,9 +2373,9 @@ function lfApply(M){const f=LG.f,a=M.asOf,supOf={};M.S.forEach(k=>supOf[k.name]=
     O=M.O.filter(o=>(!pn||o.sk.includes(pn))&&(f.sup==='*'||o.sk.some(n=>supOf[n]===f.sup))&&oq(o));
   return{H,S,O,dl:M.dl.filter(h=>H.includes(h))}}
 function lfSpl(M,F){const f=LG.f,qv=v=>/^[\w.-]+$/.test(v)?v:'"'+v.replace(/["\\]/g,'')+'"',pt=f.ref==='*'?'':(M.S.find(k=>k.ref===f.ref)||{}).name,
-    w='index=fab_logistics sourcetype=shipment:tracking'+(f.sup==='*'?'':' supplier='+qv(f.sup))+(pt?' part='+qv(pt):'')+(f.mode==='*'?'':' mode='+f.mode)+(f.st==='*'?'':' status='+(f.st==='late'?'(delayed OR exception)':qv(f.st.toLowerCase())))+(f.q.trim()?' '+qv(f.q.trim()):'')+' earliest=-10d latest=+'+(f.w?M.asOf+f.w:40)+'d',
+    w='index=fab_logistics sourcetype=shipment:tracking'+(f.sup==='*'?'':' supplier='+qv(f.sup))+(pt?' part='+qv(pt):'')+(f.mode==='*'?'':' mode='+f.mode)+(f.st==='*'?'':' status='+(f.st==='late'?'(Delayed OR Exception)':qv(f.st)))+(f.q.trim()?' '+qv(f.q.trim()):'')+' earliest=-10d latest=+'+(f.w?M.asOf+f.w:40)+'d',
     sc=[...LG.sc].join('+')+(LG.cap>1?(LG.sc.size?'+':'')+'capacity_'+Math.round(LG.cap*100):'');
-  $('#lspl').innerHTML='<code></code> <i>|</i> <code>lookup inventory_cover part OUTPUT on_hand available cover_days</code> <i>|</i> <code>eval scenario="'+esc(sc||'baseline')+'", as_of="+'+M.asOf+'d"</code> <i>|</i> <code>stats sum(delay_days) by cause</code><span class="sub"></span>';
+  $('#lspl').innerHTML='<code></code> <i>|</i> <code>lookup inventory_cover part OUTPUT on_hand available cover_days</code> <i>|</i> <code>eval scenario="'+esc(sc||'baseline')+'", as_of="+'+M.asOf+'d"</code> <i>|</i> <code>stats sum(delay) as delay_days by cause</code><span class="sub"></span>';
   $('#lspl code').textContent=w;$('#lspl .sub').textContent=F.H.length+' of '+M.H.length+' shipments, '+F.S.length+' of '+M.S.length+' parts, '+F.O.length+' of '+M.O.length+' orders'}
 function lfOpts(M){const s=$('#lfS'),p=$('#lfP');if(s.options.length>1)return;
   [...new Set(M.S.map(k=>k.sup).concat(M.H.map(h=>h.sup)))].sort().forEach(v=>s.add(new Option(v,v)));M.S.forEach(k=>p.add(new Option(k.name,k.ref)))}
@@ -2596,7 +2596,7 @@ $('#lgpi').addEventListener('click',e=>{const b=e.target.closest('[data-stock]')
 PNW['Stock projection']=PNW['Warehouse stock and cover']=1;
 document.querySelectorAll('#lgkp .k[data-pn]').forEach(c=>{const k=c.dataset.pn;c.tabIndex=0;c.setAttribute('role','button');c.setAttribute('aria-label',c.querySelector('.l').textContent+', open '+k);c.title='Sparkline: projection for the next 45 days';
   c.onclick=()=>openPn(k);c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openPn(k)}}});
-Object.assign(PN,{'Inbound shipments':{spl:'index=fab_logistics sourcetype=shipment:tracking | table id part supplier mode ship eta delay cause',info:'Shipments en route and scheduled. Bars run from ship date to forecast arrival; red dashes are delay beyond the promised date.',csv:()=>csv('id,part,supplier,mode,qty,eta,delay_days,status',(LG.M?LG.M.H:[]).map(h=>[h.id,h.name,h.sup,h.mode,h.qty,dts(Math.ceil(h.eta)),h.dl,h.st]))},
+Object.assign(PN,{'Inbound shipments':{spl:'index=fab_logistics sourcetype=shipment:tracking | table id part supplier mode ship eta delay cause',info:'Shipments en route and scheduled. Bars run from ship date to forecast arrival; red dashes are delay beyond the promised date.',csv:()=>csv('id,part,supplier,mode,qty,ship,eta,delay,status',(LG.M?LG.M.H:[]).map(h=>[h.id,h.name,h.sup,h.mode,h.qty,dts(Math.floor(h.ship)),dts(Math.ceil(h.eta)),h.dl,h.st]))},
  'Warehouse stock':{spl:'index=fab_logistics sourcetype=inventory:snapshot | table part on_hand quarantined available daily_use cover',info:'Stock by part with quarantined lots removed from available stock. Cover is available stock divided by daily use.',csv:()=>csv('part,supplier,on_hand,quarantined,available,daily_use',(LG.M?LG.M.S:[]).map(k=>[k.name,k.sup,k.onHand,k.q,Math.max(0,Math.round(LG.M.PJ[k.ref].av[Math.floor(LG.M.asOf)])),Math.round(k.daily*LG.M.cap)]))},
  'Production backlog':{spl:'index=fab_mes sourcetype=order:backlog | table order customer qty built due forecast slip',info:'Orders with forecast completion from line capacity, parts shortages and rework loss.',csv:()=>csv('order,customer,units,built,due_day,forecast_day,slip_days,status',(LG.M?LG.M.O:[]).map(o=>[o.no,o.cust,o.qty,Math.round(o.done),o.due,o.fin,o.slip,o.status]))}});
 
@@ -3047,7 +3047,7 @@ function mesPos(u){const d=MES.disp[u.id];if(!u.done)return{i:3,s:STEPS[u.st]};i
   const k=Math.floor((t-(d?d.t:u.born+48))/12)+(d&&d.k==='rework'?2:4);return k>8?{i:9,s:'Shipped'}:{i:k,s:d&&d.k==='rework'?'Rework':''}}
 function mesTx(){
   mesUnits().forEach(u=>{const p=mesPos(u),k=p.i+'|'+p.s,o=MES.seen.get(u.id);if(o===k)return;MES.seen.set(u.id,k);if(!MES.ready)return;
-    const pi=o==null?null:+o.split('|')[0],ev=(kd,txt,c)=>MES.tx.unshift({ts:hms(),kd:kd,txt:txt,c:c,u:u,i:p.i,n:MES.txN=(MES.txN||0)+1});
+    const pi=o==null?null:+o.split('|')[0],ev=(kd,txt,c)=>MES.tx.unshift({ts:hms(),kd:kd,txt:txt,c:c,u:u,i:p.i,p:pi,n:MES.txN=(MES.txN||0)+1});
     if(p.i===3)ev(pi===3?'STEP':'TRACK-IN',u.sn+' '+mWO(u)+' op 40 '+u.tool+(pi===3?' recipe step '+p.s:' recipe RP-245C-v3'),pi===3?'mu':'c');
     else if(p.i===-1)ev('HOLD',u.sn+' '+mNcr(u)+' '+mWhy(u),'r');
     else if(p.i===-2)ev('SCRAP',u.sn+' '+mNcr(u)+' scrapped by MRB','r');
@@ -4395,39 +4395,55 @@ $('#fHide').onclick=()=>{const b=fBar();b.hidden=!b.hidden;fLab()};
  *   board  unit envelopes (board, chassis, lot, tool, step, peak temp, min flow,
  *          status), filtered by the Yield/Board filter bar.
  *   map    genealogy links of the supply chain graph (supplier > inspection > lot >
- *          board > order) with release / review / blocked status and holds.
+ *          board > order, and board > chassis) with release / review / blocked status and holds.
  *   log    shipment tracking records, filtered by the Logistics filter bar.
  *   wm     warehouse task queue with live status on the shift clock, filtered by the
  *          warehouse search box.
- *   mes    the actual MES transaction log (track-in, move, hold, scrap, ship ...).
+ *   agv    per vehicle one Edge Hub telemetry, one Cisco Spaces UWB and one IR / IW
+ *          client event, each tagged with its sourcetype.
+ *   mes    the MES transaction log as the MES emits it: a move becomes track_out at the
+ *          old op plus track_in at the new one (kinds track_in, track_out, step, hold,
+ *          release, scrap, ship, system). The MES drawer keeps its display labels.
+ * Field names must match the panel SPL in PN for the same sourcetype.
  * For the record-based feeds, rawFill() cycles through the current records every
  * 500 ms with fresh values, the way a forwarder re-indexes changing state.
  */
 const RAWT={ops:['Yield Analytics','index=fab_telemetry sourcetype=cleanroom:sensor'],board:['Board Integration','index=fab_trace sourcetype=unit:envelope'],map:['Supply Chain Map','index=fab_trace sourcetype=genealogy:link'],
-  log:['Logistics And Backlog','index=fab_logistics sourcetype=shipment:tracking'],wm:['Warehouse Management','index=fab_wms sourcetype=task:queue'],agv:['AGV And Forklift Fleet','index=agv_telematics sourcetype=edgehub:telemetry'],mes:['MES Execution','index=fab_mes sourcetype=mes:transaction']};
+  log:['Logistics And Backlog','index=fab_logistics sourcetype=shipment:tracking'],wm:['Warehouse Management','index=fab_wms sourcetype=task:queue'],agv:['AGV And Forklift Fleet','(index=agv_telematics sourcetype=edgehub:telemetry) OR (index=agv_location sourcetype=cisco:spaces:uwb) OR (index=agv_network sourcetype=cisco:ir:telemetry OR sourcetype=cisco:iw:telemetry)'],mes:['MES Execution','index=fab_mes sourcetype=mes:transaction']};
 const RAW={tab:'ops',buf:{},i:{},iv:0},isoNow=d=>new Date(d==null?Date.now():d).toISOString().slice(0,23)+'Z';
 const rawKv=o=>Object.entries(o).filter(e=>e[1]!=null&&e[1]!=='').map(([k,v])=>{v=String(v);return k+'='+(/[\s"=]/.test(v)?'"'+v.replace(/"/g,"'")+'"':v)}).join(' ');
 const rawRow=(ts,o)=>{const s=rawKv(o);return '<div title="'+aiE(ts+' '+s)+'"><b>'+esc(ts)+'</b> '+esc(s)+'</div>'};
 function rawRecs(tab){
   if(tab==='board')return units.concat(failedArc.filter(u=>!units.includes(u))).filter(okU).map(u=>({board:u.sn,chassis:'SYS-'+u.ch.replace('CHS-','CH-')+'A-B',pcba:'PCB-SUP-'+u.id+'A-02',lot:u.lot,tool:u.tool,
     step:u.done?'complete':STEPS[u.st].toLowerCase(),peak_temp_c:u.tmax>-1e8?u.tmax.toFixed(1):'',min_flow_sccm:u.fmin<1e8?u.fmin.toFixed(0):'',status:u.done?(u.flag?'REVIEW':'PASS'):'IN_PROCESS'}));
-  if(tab==='map'){if(!scG)scRender(true);const G=scG,S={fail:'blocked',rev:'review',pass:'released',pend:'in_process'};
-    return G.E.map(e=>{const a=G.N[e[0]],b=G.N[e[1]];return{link:a.t+'>'+b.t,from:a.label,to:b.label,supplier:b.sup||a.sup||'',status:S[b.st]||b.st,hold:scHold.has(b.id)||scHold.has(a.id)?'yes':''}})}
-  if(tab==='log'){if(!LG.M)lgRender(true);const M=LG.M;return lfApply(M).H.map(h=>({shipment:h.id,part:h.name,supplier:h.sup,mode:h.mode,carrier:h.carrier,qty:h.qty,po:h.po,
-    status:h.st.toLowerCase().replace(' ','_'),eta:dts(Math.ceil(h.eta)),delay_days:h.dl,cause:h.cause||'',progress_pct:Math.round(h.prog*100)}))}
-  if(tab==='wm'){const D=wmBuild(),now=wmNow(),q=WM.q.toLowerCase();return D.T.filter(x=>!q||(x.id+' '+x.sku+' '+x.from+' '+x.to).toLowerCase().includes(q)).map(x=>({task:x.id,type:x.type,priority:x.pri,sku:x.sku,qty:x.qty,
-    from:x.from,to:x.to,operator:x.op,equipment:x.eq,status:wmSt(x,now)[0].toLowerCase().replace(' ','_'),shift_clock:hhmm(now)}))}
-  if(tab==='agv'){agInit();return(WA.veh||[]).map(v=>{const x=AG.s[v.id]||{};return{vehicle_id:v.id,type:agT(v),state:agStat(v)[0].toLowerCase(),x_m:(v.x/10).toFixed(2),y_m:(v.y/10).toFixed(2),uwb_accuracy:x.u?x.u[0]:'',anchors:x.L,
-    lift_height_m:(x.lift||0).toFixed(2),load_kg:Math.round(x.load||0),speed_kmh:(x.sp||0).toFixed(1),battery_pct:agBat(v),vibration_g:(x.vib||0).toFixed(2),ap:x.ap,rssi_dbm:x.rssi,latency_ms:x.lat,camera:x.cam}})}
+  if(tab==='map'){if(!scG)scRender(true);const G=scG,S={fail:'BLOCKED',rev:'REVIEW',pass:'RELEASED',pend:'IN_PROCESS'},LT={sup:'supplier',insp:'inspection',lot:'lot',brd:'board',ord:'order'},
+      id=n=>n.t==='insp'?n.qi:n.t==='lot'?n.lot:n.t==='ord'?n.no:n.label,hd=(a,b)=>scHold.has(b.id)||scHold.has(a.id)?'yes':'';
+    return G.E.map(e=>{const a=G.N[e[0]],b=G.N[e[1]];return{link:LT[a.t]+'>'+LT[b.t],from:id(a),to:id(b),supplier:b.sup||a.sup||'',status:S[b.st]||b.st,hold:hd(a,b)}})
+      .concat(Object.values(G.N).filter(n=>n.t==='brd').map(n=>({link:'board>chassis',from:n.label,to:n.sub,supplier:'',status:S[n.st]||n.st,hold:hd(n,n)})))}
+  if(tab==='log'){if(!LG.M)lgRender(true);const M=LG.M;return lfApply(M).H.map(h=>({id:h.id,part:h.name,supplier:h.sup,mode:h.mode,carrier:h.carrier,qty:h.qty,po:h.po,
+    status:h.st,ship:dts(Math.floor(h.ship)),eta:dts(Math.ceil(h.eta)),delay:h.dl,cause:h.cause||'',progress_pct:Math.round(h.prog*100)}))}
+  if(tab==='wm'){const D=wmBuild(),now=wmNow(),q=WM.q.toLowerCase();return D.T.filter(x=>!q||(x.id+' '+x.sku+' '+x.from+' '+x.to).toLowerCase().includes(q)).map(x=>({id:x.id,type:x.type,priority:x.pri,item:x.sku,qty:x.qty,
+    from:x.from,to:x.to,operator:x.op,equipment:x.eq,status:wmSt(x,now)[0],shift_clock:hhmm(now)}))}
+  if(tab==='agv'){agInit();const NW=agNet();return(WA.veh||[]).flatMap(v=>{const x=AG.s[v.id]||{},fk=v.type==='Forklift',n=NW.find(r=>r[0]===v.id+(fk?'-IR':'-IW'))||[];return[
+    {sourcetype:'edgehub:telemetry',vehicle_id:v.id,type:agT(v),state:agStat(v)[0].toLowerCase(),lift_height_m:(x.lift||0).toFixed(2),load_kg:Math.round(x.load||0),speed_kmh:(x.sp||0).toFixed(1),battery_pct:agBat(v),vibration_g:(x.vib||0).toFixed(2)},
+    {sourcetype:'cisco:spaces:uwb',vehicle_id:v.id,x_m:(v.x/10).toFixed(2),y_m:(v.y/10).toFixed(2),accuracy_m:x.u&&x.u[0][0]==='\u00b1'?parseFloat(x.u[0].slice(1)):'',anchor_count:x.L,zone:uwbZone(v.x,v.y)},
+    {sourcetype:fk?'cisco:ir:telemetry':'cisco:iw:telemetry',vehicle_id:v.id,device:n[0],model:n[1],role:n[2],status:n[3],ap:x.ap,rssi_dbm:x.rssi,latency_ms:x.lat}]})}
   return[]}
+const RAWK={'TRACK-IN':'track_in',STEP:'step',MOVE:'track_in',HOLD:'hold',SCRAP:'scrap',SHIP:'ship',SYSTEM:'system'};
+function rawMes(e){const op=i=>i!=null&&i>=0&&i<9?MOP[i][0]:'',b={serial:e.u?e.u.sn:'',work_order:e.u?mWO(e.u):''},o=op(e.p),R=[];
+  if(e.kd==='STEP')return[Object.assign({kind:'step'},b,{op:op(e.i),message:e.txt})];
+  R.push(Object.assign({kind:RAWK[e.kd]||e.kd.toLowerCase()},b,{op:e.kd==='HOLD'?o:op(e.i),message:e.txt}));
+  if(e.kd==='MOVE'&&e.p===-1)R.push(Object.assign({kind:'release'},b,{op:'',message:e.u.sn+' '+mNcr(e.u)+' released by MRB'}));
+  if(o!=='')R.push(Object.assign({kind:'track_out'},b,{op:o,message:e.u.sn+' '+mWO(e.u)+' track-out from op '+o}));
+  return R}
 function rawFill(){const tab=RAW.tab,el=$('#raw2');
-  if(tab==='mes'){const d=isoNow().slice(0,11);el.innerHTML=MES.tx.slice(0,60).map(e=>rawRow(d+e.ts+'Z',{kind:e.kd,serial:e.u?e.u.sn:'',work_order:e.u?mWO(e.u):'',op:e.i!=null&&e.i>=0&&e.i<9?MOP[e.i][0]:'',message:e.txt})).join('')||'<div class="sub">No MES transactions yet.</div>';return}
+  if(tab==='mes'){const d=isoNow().slice(0,11);el.innerHTML=MES.tx.slice(0,60).flatMap(e=>rawMes(e).map(o=>rawRow(d+e.ts+'Z',o))).slice(0,60).join('')||'<div class="sub">No MES transactions yet.</div>';return}
   const r=rawRecs(tab),b=RAW.buf[tab]||(RAW.buf[tab]=[]),nx=()=>r[RAW.i[tab]=((RAW.i[tab]==null?-1:RAW.i[tab])+1)%r.length];
   if(r.length){if(!b.length){const t0=Date.now();for(let k=Math.min(40,r.length*2);k>0;k--)b.unshift({ts:isoNow(t0-k*500),o:nx()})}else{b.unshift({ts:isoNow(),o:nx()});if(b.length>60)b.length=60}}
   el.innerHTML=b.map(x=>rawRow(x.ts,x.o)).join('')||'<div class="sub">No records match the current filters.</div>'}
 function rawReset(){clearInterval(RAW.iv);$('#raw').hidden=false;$('#raw2').hidden=true;$('#rawst').textContent='sourcetype=cleanroom:sensor, latest first';PN['Raw events'].spl=SP+'| head 60'}
 function rawOpen(){const tab=RAWT[document.body.dataset.tab]?document.body.dataset.tab:'ops',T=RAWT[tab],o=tab==='ops';rawReset();RAW.tab=tab;
-  $('#raw').hidden=!o;$('#raw2').hidden=o;$('#rawst').textContent=T[1].split(' ')[1]+', latest first';PN['Raw events'].spl=T[1]+' | head 60';
+  $('#raw').hidden=!o;$('#raw2').hidden=o;$('#rawst').textContent='sourcetype='+T[1].match(/sourcetype=[^\s)]+/g).map(s=>s.slice(11)).join(', ')+', latest first';PN['Raw events'].spl=T[1]+' | head 60';
   if(!o){RAW.buf[tab]=[];rawFill();RAW.iv=setInterval(()=>{if(PNO!=='Raw events'&&PNR!=='Raw events'){rawReset();return}if(!paused&&PNO==='Raw events')rawFill()},500)}
   openPn('Raw events')}
 PNW['Raw events']=1;PNT['Raw events']=()=>'Raw events: '+(RAWT[RAW.tab]||RAWT.ops)[0];$('#rawb').onclick=rawOpen;
